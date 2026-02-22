@@ -22,3 +22,8 @@ test('mobile menu toggles open and closed', () => {
   fireEvent.click(toggleBtn)
   expect(screen.queryByTestId('mobile-menu')).not.toBeInTheDocument()
 })
+
+test('renders brand tagline in navbar', () => {
+  render(<Navbar />)
+  expect(screen.getByText(/love your clothes, love our earth/i)).toBeInTheDocument()
+})

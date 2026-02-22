@@ -16,8 +16,13 @@ const Navbar = () => {
         {/* Logo */}
         <a href="#" aria-label="Northern Blue — return to top" className="flex items-center gap-3 group">
           <span aria-hidden="true"><ButterflyLogo size={36} /></span>
-          <span className="font-serif text-xl text-nb-navy tracking-wide">
-            Northern Blue
+          <span className="flex flex-col">
+            <span className="font-serif text-xl text-nb-navy tracking-wide">
+              Northern Blue
+            </span>
+            <span className="text-xs italic text-nb-navy/50 tracking-wide hidden md:block">
+              Love your clothes, love our earth.
+            </span>
           </span>
         </a>
 
