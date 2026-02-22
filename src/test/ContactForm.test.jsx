@@ -2,7 +2,11 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import ContactForm from '../components/ContactForm'
 
 let originalLocation
-beforeEach(() => { originalLocation = window.location })
+beforeEach(() => {
+  originalLocation = window.location
+  delete window.location
+  window.location = { href: '' }
+})
 afterEach(() => { window.location = originalLocation })
 
 test('renders all form fields', () => {
@@ -34,10 +38,6 @@ test('has correct anchor id for smooth scroll', () => {
 })
 
 test('clicking Send Message triggers a mailto link', () => {
-  // Spy on window.location.href setter
-  delete window.location
-  window.location = { href: '' }
-
   render(<ContactForm />)
   fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Jane' } })
   fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'jane@example.com' } })
