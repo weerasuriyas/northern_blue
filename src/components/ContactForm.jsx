@@ -13,7 +13,9 @@ const ContactForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    // TODO: wire up to email service (EmailJS, backend, etc.)
+    const body = `Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`
+    const mailto = `mailto:admin@northernblue.ca?subject=${encodeURIComponent(form.subject)}&body=${encodeURIComponent(body)}`
+    window.location.href = mailto
     setSubmitted(true)
   }
 
