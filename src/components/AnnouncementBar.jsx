@@ -12,6 +12,7 @@ const AnnouncementBar = () => {
         <span className="underline underline-offset-2 cursor-pointer">Shop now →</span>
       </p>
       <button
+        type="button"
         aria-label="dismiss announcement"
         className="absolute right-4 text-white/50 hover:text-white transition-colors text-xl leading-none"
         onClick={() => setDismissed(true)}
