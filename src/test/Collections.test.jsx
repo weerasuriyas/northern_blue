@@ -23,3 +23,9 @@ test('has correct section id for smooth scroll', () => {
   const { container } = render(<Collections />)
   expect(container.querySelector('#collections')).toBeInTheDocument()
 })
+
+test('heading and grid have fade-in class', () => {
+  const { container } = render(<Collections />)
+  const fadeEls = container.querySelectorAll('.fade-in')
+  expect(fadeEls.length).toBeGreaterThanOrEqual(2)
+})

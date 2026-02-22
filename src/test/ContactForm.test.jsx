@@ -49,3 +49,9 @@ test('clicking Send Message triggers a mailto link', () => {
   expect(window.location.href).toContain('subject=Hello')
   expect(window.location.href).toContain('jane%40example.com')
 })
+
+test('inner content has fade-in class', () => {
+  const { container } = render(<ContactForm />)
+  const fadeEl = container.querySelector('.fade-in')
+  expect(fadeEl).toBeInTheDocument()
+})

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import ButterflyLogo from './ButterflyLogo'
+import useFadeIn from '../hooks/useFadeIn'
 
 const INPUT_CLASS =
   'w-full rounded-lg border border-nb-sky/60 bg-white px-4 py-3 text-nb-navy placeholder-nb-navy/30 focus:outline-none focus:ring-2 focus:ring-nb-blue/40 focus:border-nb-blue transition'
@@ -7,6 +8,8 @@ const INPUT_CLASS =
 const ContactForm = () => {
   const [submitted, setSubmitted] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
+  const containerRef = useRef(null)
+  useFadeIn(containerRef)
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -21,7 +24,7 @@ const ContactForm = () => {
 
   return (
     <section id="contact" className="bg-white py-24 px-6">
-      <div className="max-w-xl mx-auto">
+      <div ref={containerRef} className="fade-in max-w-xl mx-auto">
         <div className="flex items-center gap-3 mb-10">
           <ButterflyLogo size={28} />
           <h2 className="font-serif text-4xl text-nb-navy">Get in Touch</h2>
