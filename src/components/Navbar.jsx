@@ -11,7 +11,7 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-nb-bg/90 backdrop-blur-sm border-b border-nb-sky/30">
+    <header className="bg-nb-bg/90 backdrop-blur-sm border-b border-nb-sky/30">
       <nav className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <a href="#" aria-label="Northern Blue — return to top" className="flex items-center gap-3 group">

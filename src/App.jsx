@@ -9,8 +9,10 @@ import Footer from './components/Footer'
 function App() {
   return (
     <>
-      <AnnouncementBar />
-      <Navbar />
+      <div className="sticky top-0 z-50">
+        <AnnouncementBar />
+        <Navbar />
+      </div>
       <main>
         <Hero />
         <About />
