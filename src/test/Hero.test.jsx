@@ -18,6 +18,6 @@ test('renders scroll-down link pointing to about section', () => {
 
 test('hero butterfly logo has flutter animation enabled', () => {
   const { container } = render(<Hero />)
-  const svg = container.querySelector('svg')
+  const svg = container.querySelector('svg[aria-label="Northern Blue butterfly logo"]')
   expect(svg).toHaveClass('butterfly-flutter')
 })
