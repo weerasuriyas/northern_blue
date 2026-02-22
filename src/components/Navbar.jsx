@@ -3,6 +3,7 @@ import ButterflyLogo from './ButterflyLogo'
 
 const NAV_LINKS = [
   { label: 'About', href: '#about' },
+  { label: 'Collections', href: '#collections' },
   { label: 'Contact', href: '#contact' },
 ]
 

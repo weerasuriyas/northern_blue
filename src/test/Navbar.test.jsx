@@ -1,9 +1,10 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import Navbar from '../components/Navbar'
 
-test('renders About and Contact nav links', () => {
+test('renders About, Collections, and Contact nav links', () => {
   render(<Navbar />)
   expect(screen.getByRole('link', { name: /about/i })).toHaveAttribute('href', '#about')
+  expect(screen.getByRole('link', { name: /collections/i })).toHaveAttribute('href', '#collections')
   expect(screen.getByRole('link', { name: /contact/i })).toHaveAttribute('href', '#contact')
 })
 

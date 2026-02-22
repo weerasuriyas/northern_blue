@@ -7,3 +7,13 @@ test('renders all main sections', () => {
   expect(screen.getByRole('heading', { name: /our story/i })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: /get in touch/i })).toBeInTheDocument()
 })
+
+test('renders Collections section', () => {
+  render(<App />)
+  expect(screen.getByRole('heading', { name: /our collections/i })).toBeInTheDocument()
+})
+
+test('renders announcement bar', () => {
+  render(<App />)
+  expect(screen.getByText(/free shipping on orders over/i)).toBeInTheDocument()
+})
