@@ -1,6 +1,10 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import ContactForm from '../components/ContactForm'
 
+let originalLocation
+beforeEach(() => { originalLocation = window.location })
+afterEach(() => { window.location = originalLocation })
+
 test('renders all form fields', () => {
   render(<ContactForm />)
   expect(screen.getByLabelText(/name/i)).toBeInTheDocument()
