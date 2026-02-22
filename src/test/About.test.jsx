@@ -15,3 +15,9 @@ test('renders the pull-quote', () => {
   render(<About />)
   expect(screen.getByText(/every woman deserves/i)).toBeInTheDocument()
 })
+
+test('image and text columns have fade-in class', () => {
+  const { container } = render(<About />)
+  const fadeEls = container.querySelectorAll('.fade-in')
+  expect(fadeEls.length).toBeGreaterThanOrEqual(2)
+})
