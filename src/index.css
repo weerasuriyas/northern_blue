@@ -10,3 +10,26 @@ body {
   background-color: #F8FAFD;
   color: #1B2F4E;
 }
+
+/* Butterfly wing flutter animation */
+@keyframes wing-flutter-left {
+  0%, 100% { transform: scaleX(1); }
+  50%       { transform: scaleX(0.45); }
+}
+
+@keyframes wing-flutter-right {
+  0%, 100% { transform: scaleX(1); }
+  50%       { transform: scaleX(0.45); }
+}
+
+.butterfly-flutter .wing-left {
+  transform-box: fill-box;
+  transform-origin: 100% 50%;
+  animation: wing-flutter-left 1.8s ease-in-out infinite;
+}
+
+.butterfly-flutter .wing-right {
+  transform-box: fill-box;
+  transform-origin: 0% 50%;
+  animation: wing-flutter-right 1.8s ease-in-out infinite;
+}
