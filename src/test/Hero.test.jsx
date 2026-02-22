@@ -15,3 +15,9 @@ test('renders scroll-down link pointing to about section', () => {
   render(<Hero />)
   expect(screen.getByRole('link', { name: /scroll down/i })).toHaveAttribute('href', '#about')
 })
+
+test('hero butterfly logo has flutter animation enabled', () => {
+  const { container } = render(<Hero />)
+  const svg = container.querySelector('svg')
+  expect(svg).toHaveClass('butterfly-flutter')
+})

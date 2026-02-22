@@ -10,7 +10,7 @@ const Hero = () => (
   >
     {/* Butterfly centerpiece */}
     <div className="mb-8 drop-shadow-lg">
-      <ButterflyLogo size={160} />
+      <ButterflyLogo size={160} flutter />
     </div>
 
     {/* Brand name */}
