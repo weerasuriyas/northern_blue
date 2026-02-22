@@ -17,3 +17,15 @@ test('accepts a className prop', () => {
   const svg = container.querySelector('svg')
   expect(svg).toHaveClass('my-class')
 })
+
+test('applies butterfly-flutter class to SVG when flutter prop is true', () => {
+  const { container } = render(<ButterflyLogo flutter />)
+  const svg = container.querySelector('svg')
+  expect(svg).toHaveClass('butterfly-flutter')
+})
+
+test('does not apply butterfly-flutter class by default', () => {
+  const { container } = render(<ButterflyLogo />)
+  const svg = container.querySelector('svg')
+  expect(svg).not.toHaveClass('butterfly-flutter')
+})
