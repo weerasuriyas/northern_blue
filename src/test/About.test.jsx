@@ -13,7 +13,7 @@ test('has correct anchor id for smooth scroll', () => {
 
 test('renders the pull-quote', () => {
   render(<About />)
-  expect(screen.getByText(/every woman deserves/i)).toBeInTheDocument()
+  expect(screen.getByText(/love your clothes, love our earth/i)).toBeInTheDocument()
 })
 
 test('image and text columns have fade-in class', () => {
