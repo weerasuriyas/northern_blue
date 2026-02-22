@@ -20,7 +20,7 @@ const Hero = () => (
 
     {/* Tagline */}
     <p className="text-nb-navy/60 text-lg md:text-xl tracking-wide text-center max-w-md">
-      Style for every body. Every season.
+      Love your clothes, love our earth.
     </p>
 
     {/* Scroll indicator */}

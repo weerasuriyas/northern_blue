@@ -8,7 +8,7 @@ test('renders the brand name heading', () => {
 
 test('renders the tagline', () => {
   render(<Hero />)
-  expect(screen.getByText(/style for every body/i)).toBeInTheDocument()
+  expect(screen.getByText(/love your clothes, love our earth/i)).toBeInTheDocument()
 })
 
 test('renders scroll-down link pointing to about section', () => {
