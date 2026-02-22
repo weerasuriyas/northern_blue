@@ -3,7 +3,7 @@ import Footer from '../components/Footer'
 
 test('renders Northern Blue name in footer', () => {
   render(<Footer />)
-  expect(screen.getByText(/northern blue/i)).toBeInTheDocument()
+  expect(screen.getAllByText(/northern blue/i).length).toBeGreaterThan(0)
 })
 
 test('renders current year in copyright', () => {

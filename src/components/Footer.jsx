@@ -8,7 +8,7 @@ const Footer = () => (
         Northern Blue
       </p>
       <p className="text-white/40 text-xs">
-        &copy; {new Date().getFullYear()} &mdash; All rights reserved.
+        &copy; {new Date().getFullYear()} Northern Blue. All rights reserved.
       </p>
     </div>
   </footer>
