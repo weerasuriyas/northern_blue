@@ -6,15 +6,17 @@ const AnnouncementBar = () => {
   if (dismissed) return null
 
   return (
-    <div className="bg-nb-navy text-white text-sm py-2.5 px-6 flex items-center justify-center relative">
+    <div className="bg-nb-navy text-white text-xs sm:text-sm py-2.5 px-10 flex items-center justify-center relative">
       <p className="text-white/90 tracking-wide text-center">
-        Free shipping on orders over $75&nbsp;&nbsp;·&nbsp;&nbsp;
+        Free shipping on orders over $75
+        <span className="hidden sm:inline">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
+        <span className="sm:hidden"> · </span>
         <span className="underline underline-offset-2 cursor-pointer">Shop now →</span>
       </p>
       <button
         type="button"
         aria-label="dismiss announcement"
-        className="absolute right-4 text-white/50 hover:text-white transition-colors text-xl leading-none"
+        className="absolute right-2 p-2 text-white/50 hover:text-white transition-colors text-xl leading-none"
         onClick={() => setDismissed(true)}
       >
         ×

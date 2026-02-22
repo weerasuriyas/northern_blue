@@ -23,11 +23,11 @@ const ContactForm = () => {
   }
 
   return (
-    <section id="contact" className="bg-white py-24 px-6">
+    <section id="contact" className="bg-white py-16 md:py-24 px-6">
       <div ref={containerRef} className="fade-in max-w-xl mx-auto">
         <div className="flex items-center gap-3 mb-10">
           <ButterflyLogo size={28} />
-          <h2 className="font-serif text-4xl text-nb-navy">Get in Touch</h2>
+          <h2 className="font-serif text-3xl md:text-4xl text-nb-navy">Get in Touch</h2>
         </div>
         {submitted ? (
           <div className="text-center py-16">
@@ -99,7 +99,7 @@ const ContactForm = () => {
             </div>
             <button
               type="submit"
-              className="w-full bg-nb-blue text-white font-medium py-3.5 rounded-lg hover:bg-nb-navy transition-colors tracking-wide"
+              className="w-full bg-nb-blue text-white font-medium py-4 rounded-lg hover:bg-nb-navy transition-colors tracking-wide"
             >
               Send Message
             </button>

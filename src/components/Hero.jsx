@@ -9,8 +9,8 @@ const Hero = () => (
     }}
   >
     {/* Butterfly centerpiece */}
-    <div className="mb-8 drop-shadow-lg">
-      <ButterflyLogo size={160} flutter />
+    <div className="mb-8 drop-shadow-lg w-28 sm:w-36 md:w-40">
+      <ButterflyLogo size={160} flutter className="w-full h-auto" />
     </div>
 
     {/* Brand name */}
@@ -27,7 +27,7 @@ const Hero = () => (
     <a
       href="#about"
       aria-label="scroll down"
-      className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-nb-blue/50 hover:text-nb-blue transition-colors animate-bounce"
+      className="absolute bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-nb-blue/50 hover:text-nb-blue transition-colors animate-bounce"
     >
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M6 9l6 6 6-6" />

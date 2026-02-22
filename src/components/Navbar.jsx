@@ -38,7 +38,7 @@ const Navbar = () => {
         {/* Mobile hamburger */}
         <button
           aria-label="toggle menu"
-          className="md:hidden flex flex-col gap-1.5 p-2"
+          className="md:hidden flex flex-col gap-1.5 p-3"
           onClick={() => setMobileOpen((prev) => !prev)}
         >
           <span className="block w-6 h-0.5 bg-nb-navy" />
