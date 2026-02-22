@@ -22,7 +22,7 @@ const useFadeIn = (ref) => {
 
     observer.observe(el)
     return () => observer.disconnect()
-  }, [ref])
+  }, []) // ref is stable (useRef); effect runs once on mount
 }
 
 export default useFadeIn

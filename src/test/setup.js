@@ -13,12 +13,11 @@ beforeEach(() => {
     }),
   })
 
-  if (!global.IntersectionObserver) {
-    global.IntersectionObserver = class {
-      constructor() {}
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    }
+  // Always install unconditionally; useFadeIn.test.jsx overrides with a richer spy in its own beforeEach
+  global.IntersectionObserver = class {
+    constructor() {}
+    observe() {}
+    unobserve() {}
+    disconnect() {}
   }
 })
