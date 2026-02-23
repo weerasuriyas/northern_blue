@@ -3,7 +3,7 @@ import ButterflyLogo from '../components/ButterflyLogo'
 
 test('renders butterfly logo SVG with accessible label', () => {
   render(<ButterflyLogo />)
-  expect(screen.getByRole('img', { name: /northern blue butterfly logo/i })).toBeInTheDocument()
+  expect(screen.getByRole('img', { name: /northern blue plus butterfly logo/i })).toBeInTheDocument()
 })
 
 test('accepts a size prop', () => {

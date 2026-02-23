@@ -11,7 +11,7 @@ const ButterflyLogo = ({ size = 80, className = '', flutter = false }) => {
       width={size}
       height={Math.round(size * (100 / 120))}
       className={[className, flutter ? 'butterfly-flutter' : ''].filter(Boolean).join(' ')}
-      aria-label="Northern Blue butterfly logo"
+      aria-label="Northern Blue Plus butterfly logo"
       role="img"
     >
       <defs>
