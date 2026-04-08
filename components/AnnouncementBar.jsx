@@ -1,0 +1,31 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+
+const AnnouncementBar = () => {
+  const [dismissed, setDismissed] = useState(false)
+
+  if (dismissed) return null
+
+  return (
+    <div className="bg-nb-navy text-white text-xs sm:text-sm py-2.5 px-10 flex items-center justify-center relative">
+      <p className="text-white/90 tracking-wide text-center">
+        Free shipping on orders over $75
+        <span className="hidden sm:inline">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
+        <span className="sm:hidden"> · </span>
+        <Link href="/collections" className="underline underline-offset-2">Shop now →</Link>
+      </p>
+      <button
+        type="button"
+        aria-label="dismiss announcement"
+        className="absolute right-2 p-2 text-white/50 hover:text-white transition-colors text-xl leading-none"
+        onClick={() => setDismissed(true)}
+      >
+        ×
+      </button>
+    </div>
+  )
+}
+
+export default AnnouncementBar
