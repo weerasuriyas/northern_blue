@@ -86,7 +86,7 @@ export async function POST(request, { params }) {
   return NextResponse.json({ ok: true })
 }
 
-export async function PUT(request, { params }) {
+export async function PUT() {
   const authError = await requireAuth()
   if (authError) return authError
 
