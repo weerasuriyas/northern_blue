@@ -6,6 +6,7 @@ import {
   MOCK_CUSTOMERS,
   MOCK_INVENTORY,
   MOCK_DASHBOARD_STATS,
+  MOCK_SUPPLIERS,
 } from '@/lib/mock-admin-data'
 import { MOCK_PRODUCTS } from '@/lib/mock-data'
 
@@ -63,6 +64,17 @@ export async function GET(request, { params }) {
     return NextResponse.json({ customer, orders })
   }
 
+  // --- Suppliers ---
+  if (path === 'suppliers.json') {
+    return NextResponse.json({ suppliers: MOCK_SUPPLIERS })
+  }
+  const supplierMatch = path.match(/^suppliers\/([^/]+)\.json$/)
+  if (supplierMatch) {
+    const supplier = MOCK_SUPPLIERS.find(s => s.id === supplierMatch[1])
+    if (!supplier) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ supplier })
+  }
+
   // --- Inventory ---
   if (path === 'inventory/levels.json') {
     return NextResponse.json({ inventory: MOCK_INVENTORY })
@@ -81,6 +93,11 @@ export async function POST(request, { params }) {
   const fulfillMatch = path.match(/^orders\/([^/]+)\/fulfillments\.json$/)
   if (fulfillMatch) {
     return NextResponse.json({ fulfillment: { id: 'stub-fulfillment', status: 'success' } })
+  }
+
+  // Suppliers stub
+  if (path === 'suppliers.json') {
+    return NextResponse.json({ ok: true, supplier: { id: `sup-${Date.now()}` } })
   }
 
   return NextResponse.json({ ok: true })
