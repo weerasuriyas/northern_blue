@@ -8,6 +8,7 @@ import {
   MOCK_DASHBOARD_STATS,
   MOCK_REVENUE,
   MOCK_SUPPLIERS,
+  MOCK_DISCOUNTS,
 } from '@/lib/mock-admin-data'
 import { MOCK_PRODUCTS } from '@/lib/mock-data'
 
@@ -86,6 +87,17 @@ export async function GET(request, { params }) {
     return NextResponse.json({ inventory: MOCK_INVENTORY })
   }
 
+  // --- Discounts ---
+  if (path === 'discounts.json') {
+    return NextResponse.json({ discounts: MOCK_DISCOUNTS })
+  }
+  const discountMatch = path.match(/^discounts\/([^/]+)\.json$/)
+  if (discountMatch) {
+    const discount = MOCK_DISCOUNTS.find(d => d.id === discountMatch[1])
+    if (!discount) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ discount })
+  }
+
   // --- Settings ---
   if (path === 'settings.json') {
     return NextResponse.json({
@@ -117,12 +129,25 @@ export async function POST(request, { params }) {
     return NextResponse.json({ ok: true, supplier: { id: `sup-${Date.now()}` } })
   }
 
+  // Discounts stub
+  if (path === 'discounts.json') {
+    return NextResponse.json({ ok: true })
+  }
+
   return NextResponse.json({ ok: true })
 }
 
-export async function PUT() {
+export async function PUT(request, { params }) {
   const authError = await requireAuth()
   if (authError) return authError
+
+  const path = (await params).path.join('/')
+
+  // Discount active toggle stub
+  const toggleMatch = path.match(/^discounts\/([^/]+)\/toggle\.json$/)
+  if (toggleMatch) {
+    return NextResponse.json({ ok: true })
+  }
 
   return NextResponse.json({ ok: true })
 }
