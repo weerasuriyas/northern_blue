@@ -9,6 +9,7 @@ import {
   MOCK_REVENUE,
   MOCK_SUPPLIERS,
   MOCK_DISCOUNTS,
+  MOCK_RETURNS,
 } from '@/lib/mock-admin-data'
 import { MOCK_PRODUCTS } from '@/lib/mock-data'
 
@@ -71,6 +72,17 @@ export async function GET(request, { params }) {
     return NextResponse.json({ customer, orders })
   }
 
+  // --- Returns ---
+  if (path === 'returns.json') {
+    return NextResponse.json({ returns: MOCK_RETURNS })
+  }
+  const returnMatch = path.match(/^returns\/([^/]+)\.json$/)
+  if (returnMatch) {
+    const ret = MOCK_RETURNS.find(r => r.id === returnMatch[1])
+    if (!ret) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ return: ret })
+  }
+
   // --- Suppliers ---
   if (path === 'suppliers.json') {
     return NextResponse.json({ suppliers: MOCK_SUPPLIERS })
@@ -131,6 +143,17 @@ export async function POST(request, { params }) {
 
   // Discounts stub
   if (path === 'discounts.json') {
+    return NextResponse.json({ ok: true })
+  }
+
+  // Returns action stubs
+  if (path.match(/^returns\/([^/]+)\/approve\.json$/)) {
+    return NextResponse.json({ ok: true })
+  }
+  if (path.match(/^returns\/([^/]+)\/decline\.json$/)) {
+    return NextResponse.json({ ok: true })
+  }
+  if (path.match(/^returns\/([^/]+)\/refund\.json$/)) {
     return NextResponse.json({ ok: true })
   }
 
