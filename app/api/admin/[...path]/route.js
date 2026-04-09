@@ -6,6 +6,7 @@ import {
   MOCK_CUSTOMERS,
   MOCK_INVENTORY,
   MOCK_DASHBOARD_STATS,
+  MOCK_REVENUE,
 } from '@/lib/mock-admin-data'
 import { MOCK_PRODUCTS } from '@/lib/mock-data'
 
@@ -27,6 +28,11 @@ export async function GET(request, { params }) {
   // --- Dashboard ---
   if (path === 'dashboard') {
     return NextResponse.json(MOCK_DASHBOARD_STATS)
+  }
+
+  // --- Revenue chart ---
+  if (path === 'revenue.json') {
+    return NextResponse.json({ revenue: MOCK_REVENUE })
   }
 
   // --- Products ---

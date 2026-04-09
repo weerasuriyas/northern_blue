@@ -7,12 +7,14 @@ import StatsCard from '@/admin/components/StatsCard'
 import DataTable from '@/admin/components/DataTable'
 import StatusBadge from '@/admin/components/StatusBadge'
 import LowStockAlert from '@/admin/components/LowStockAlert'
+import RevenueChart from '@/admin/components/RevenueChart'
 import { formatCurrency } from '@/lib/formatCurrency'
 
 export default function DashboardPage() {
   const [stats, setStats] = useState(null)
   const [orders, setOrders] = useState([])
   const [inventory, setInventory] = useState([])
+  const [revenue, setRevenue] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -20,10 +22,12 @@ export default function DashboardPage() {
       fetch('/api/admin/dashboard').then(r => r.json()),
       fetch('/api/admin/orders.json').then(r => r.json()),
       fetch('/api/admin/inventory/levels.json').then(r => r.json()),
-    ]).then(([s, o, inv]) => {
+      fetch('/api/admin/revenue.json').then(r => r.json()),
+    ]).then(([s, o, inv, rev]) => {
       setStats(s)
       setOrders(o.orders?.slice(0, 5) ?? [])
       setInventory(inv.inventory ?? [])
+      setRevenue(rev.revenue ?? [])
       setLoading(false)
     })
   }, [])
@@ -54,6 +58,12 @@ export default function DashboardPage() {
             title="Avg Order Value"
             value={stats ? formatCurrency(stats.avgOrderValue, stats.currencyCode) : '—'}
           />
+        </div>
+
+        {/* Revenue chart */}
+        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+          <h2 className="font-semibold text-nb-navy mb-4">Revenue — Last 30 Days</h2>
+          <RevenueChart data={revenue} />
         </div>
 
         {/* Low stock */}
