@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { query } from '@/lib/db'
-import { MOCK_PRODUCTS } from '@/lib/mock-data'
 
 async function requireAuth() {
   const cookieStore = await cookies()
@@ -54,15 +53,27 @@ export async function GET(request, { params }) {
     return NextResponse.json({ revenue: result.rows })
   }
 
-  // --- Products (still mock — Shopify owns products) ---
+  // --- Products ---
   if (path === 'products.json') {
-    return NextResponse.json({ products: MOCK_PRODUCTS })
+    const result = await query(
+      `SELECT id, title, handle, description, collection_handle AS "collectionHandle",
+              price_min::text AS "priceMin", currency_code AS "currencyCode",
+              images, variants
+       FROM products ORDER BY title`
+    )
+    return NextResponse.json({ products: result.rows })
   }
   const productMatch = path.match(/^products\/([^/]+)\.json$/)
   if (productMatch) {
-    const product = MOCK_PRODUCTS.find(p => p.id === productMatch[1] || p.handle === productMatch[1])
-    if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    return NextResponse.json({ product })
+    const result = await query(
+      `SELECT id, title, handle, description, collection_handle AS "collectionHandle",
+              price_min::text AS "priceMin", currency_code AS "currencyCode",
+              images, variants
+       FROM products WHERE id = $1 OR handle = $2`,
+      [productMatch[1], productMatch[1]]
+    )
+    if (!result.rows[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ product: result.rows[0] })
   }
 
   // --- Orders ---

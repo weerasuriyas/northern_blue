@@ -86,6 +86,26 @@ CREATE TABLE IF NOT EXISTS returns (
   notes          TEXT
 );
 
+CREATE TABLE IF NOT EXISTS collections (
+  id          TEXT PRIMARY KEY,
+  title       TEXT NOT NULL,
+  handle      TEXT NOT NULL UNIQUE,
+  description TEXT,
+  image       TEXT
+);
+
+CREATE TABLE IF NOT EXISTS products (
+  id                TEXT PRIMARY KEY,
+  title             TEXT NOT NULL,
+  handle            TEXT NOT NULL UNIQUE,
+  description       TEXT,
+  collection_handle TEXT REFERENCES collections(handle),
+  price_min         NUMERIC(10,2),
+  currency_code     TEXT DEFAULT 'CAD',
+  images            JSONB DEFAULT '[]',
+  variants          JSONB DEFAULT '[]'
+);
+
 CREATE TABLE IF NOT EXISTS revenue (
   date    DATE PRIMARY KEY,
   amount  NUMERIC(10,2) DEFAULT 0
