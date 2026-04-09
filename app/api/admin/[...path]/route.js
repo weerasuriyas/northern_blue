@@ -91,26 +91,48 @@ export async function GET(request, { params }) {
   // --- Orders ---
   if (path === 'orders.json') {
     const result = await query(
-      `SELECT id, name, customer_id AS "customerId", customer_name AS "customerName",
-              customer_email AS "customerEmail", line_items AS "lineItems",
-              subtotal_price::text AS "subtotalPrice", total_price::text AS "totalPrice",
-              currency_code AS "currencyCode", fulfillment_status AS "fulfillmentStatus",
-              financial_status AS "financialStatus", shipping_address AS "shippingAddress",
-              timeline, to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
-       FROM orders ORDER BY created_at DESC`
+      `SELECT o.id, o.name,
+              o.customer_id AS "customerId", o.customer_name AS "customerName",
+              o.customer_email AS "customerEmail", o.line_items AS "lineItems",
+              o.subtotal_price::text AS "subtotalPrice", o.total_price::text AS "totalPrice",
+              o.currency_code AS "currencyCode", o.fulfillment_status AS "fulfillmentStatus",
+              o.financial_status AS "financialStatus", o.shipping_address AS "shippingAddress",
+              o.timeline, to_char(o.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt",
+              (
+                SELECT json_agg(DISTINCT jsonb_build_object('id', s.id, 'name', s.name))
+                FROM jsonb_array_elements(o.line_items) AS li
+                JOIN products p ON p.title = li->>'title'
+                JOIN suppliers s ON s.id = p.supplier_id
+              ) AS suppliers
+       FROM orders o ORDER BY o.created_at DESC`
     )
     return NextResponse.json({ orders: result.rows })
   }
   const orderMatch = path.match(/^orders\/([^/]+)\.json$/)
   if (orderMatch) {
     const result = await query(
-      `SELECT id, name, customer_id AS "customerId", customer_name AS "customerName",
-              customer_email AS "customerEmail", line_items AS "lineItems",
-              subtotal_price::text AS "subtotalPrice", total_price::text AS "totalPrice",
-              currency_code AS "currencyCode", fulfillment_status AS "fulfillmentStatus",
-              financial_status AS "financialStatus", shipping_address AS "shippingAddress",
-              timeline, to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
-       FROM orders WHERE id = $1 OR name = $2`,
+      `SELECT o.id, o.name,
+              o.customer_id AS "customerId", o.customer_name AS "customerName",
+              o.customer_email AS "customerEmail",
+              o.subtotal_price::text AS "subtotalPrice", o.total_price::text AS "totalPrice",
+              o.currency_code AS "currencyCode", o.fulfillment_status AS "fulfillmentStatus",
+              o.financial_status AS "financialStatus", o.shipping_address AS "shippingAddress",
+              o.timeline, to_char(o.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt",
+              (
+                SELECT json_agg(
+                  jsonb_build_object(
+                    'title',        li->>'title',
+                    'variantTitle', li->>'variantTitle',
+                    'quantity',     li->>'quantity',
+                    'price',        li->>'price',
+                    'supplier',     jsonb_build_object('id', s.id, 'name', s.name)
+                  )
+                )
+                FROM jsonb_array_elements(o.line_items) AS li
+                LEFT JOIN products p ON p.title = li->>'title'
+                LEFT JOIN suppliers s ON s.id = p.supplier_id
+              ) AS "lineItems"
+       FROM orders o WHERE o.id = $1 OR o.name = $2`,
       [orderMatch[1], orderMatch[1]]
     )
     if (!result.rows[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })

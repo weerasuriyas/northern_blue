@@ -69,11 +69,21 @@ export default function OrderDetailPage() {
               <StatusBadge status={order.financialStatus} />
             </div>
             <p className="text-xs text-gray-400">{new Date(order.createdAt).toLocaleString('en-CA', { dateStyle: 'long', timeStyle: 'short' })}</p>
-            <div className="border-t border-gray-50 pt-3 space-y-1.5">
+            <div className="border-t border-gray-50 pt-3 space-y-2">
               {order.lineItems.map((item, i) => (
-                <div key={i} className="flex justify-between text-sm">
-                  <span className="text-gray-700">{item.title} <span className="text-gray-400">× {item.quantity}</span> <span className="text-gray-400 text-xs">({item.variantTitle})</span></span>
-                  <span className="font-medium text-nb-navy">{formatCurrency(item.price, order.currencyCode)}</span>
+                <div key={i} className="flex justify-between items-start text-sm gap-2">
+                  <div>
+                    <span className="text-gray-700">{item.title}</span>
+                    <span className="text-gray-400"> × {item.quantity}</span>
+                    <span className="text-gray-400 text-xs"> ({item.variantTitle})</span>
+                    {item.supplier && (
+                      <Link href={`/admin/suppliers/${item.supplier.id}`}
+                        className="ml-2 text-xs bg-nb-sky/20 text-nb-blue px-2 py-0.5 rounded-full hover:bg-nb-sky/40 transition-colors">
+                        {item.supplier.name}
+                      </Link>
+                    )}
+                  </div>
+                  <span className="font-medium text-nb-navy shrink-0">{formatCurrency(item.price, order.currencyCode)}</span>
                 </div>
               ))}
               <div className="flex justify-between font-semibold text-nb-navy border-t border-gray-50 pt-2">

@@ -29,6 +29,20 @@ export default function OrdersPage() {
     { key: 'createdAt', header: 'Date', render: r => new Date(r.createdAt).toLocaleDateString('en-CA') },
     { key: 'customerName', header: 'Customer' },
     { key: 'shippingAddress', header: 'Location', render: r => `${r.shippingAddress.city}, ${r.shippingAddress.province}` },
+    { key: 'suppliers', header: 'Supplier', render: r => {
+      const suppliers = r.suppliers ?? []
+      if (!suppliers.length) return <span className="text-gray-400 text-xs">—</span>
+      return (
+        <div className="flex flex-wrap gap-1">
+          {suppliers.map(s => (
+            <Link key={s.id} href={`/admin/suppliers/${s.id}`}
+              className="text-xs bg-nb-sky/20 text-nb-blue px-2 py-0.5 rounded-full hover:bg-nb-sky/40 transition-colors">
+              {s.name}
+            </Link>
+          ))}
+        </div>
+      )
+    }},
     { key: 'totalPrice', header: 'Total', render: r => formatCurrency(r.totalPrice, r.currencyCode) },
     { key: 'financialStatus', header: 'Payment', render: r => <StatusBadge status={r.financialStatus} /> },
     { key: 'fulfillmentStatus', header: 'Fulfillment', render: r => <StatusBadge status={r.fulfillmentStatus} /> },

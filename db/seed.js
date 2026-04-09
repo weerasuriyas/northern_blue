@@ -29,18 +29,18 @@ function makeVariants(basePrice) {
 }
 
 const PRODUCTS = [
-  { id: 'gid://shopify/Product/1',  title: 'Floral Wrap Dress',        handle: 'floral-wrap-dress',        collectionHandle: 'spring-collection',   price: '79.99',  description: 'A breezy wrap dress in a soft floral print. Flattering tie waist, flutter sleeves, midi length. Perfect for spring outings.' },
-  { id: 'gid://shopify/Product/2',  title: 'Garden Print Blouse',       handle: 'garden-print-blouse',      collectionHandle: 'spring-collection',   price: '54.99',  description: 'Light and airy blouse with a botanical print. Relaxed fit, V-neckline, 3/4 sleeves. Pairs beautifully with jeans or trousers.' },
-  { id: 'gid://shopify/Product/3',  title: 'Midi Skirt in Sage',        handle: 'midi-skirt-sage',          collectionHandle: 'spring-collection',   price: '64.99',  description: 'Flowy midi skirt in a calming sage green. Elastic waistband for all-day comfort. Versatile enough for work or weekend.' },
-  { id: 'gid://shopify/Product/4',  title: 'Classic Jersey Tee',        handle: 'classic-jersey-tee',       collectionHandle: 'everyday-essentials', price: '34.99',  description: "The tee you'll reach for every morning. Premium cotton jersey, relaxed fit, crew neck. Available in six colours." },
-  { id: 'gid://shopify/Product/5',  title: 'High-Waist Straight Jeans', handle: 'high-waist-straight-jeans',collectionHandle: 'everyday-essentials', price: '89.99',  description: 'Straight-leg jeans cut to celebrate curves. High rise, full seat, and thigh with a straight leg from knee to hem. Our most-loved fit.' },
-  { id: 'gid://shopify/Product/6',  title: 'Relaxed Linen Pants',       handle: 'relaxed-linen-pants',      collectionHandle: 'everyday-essentials', price: '69.99',  description: 'Breathable linen trousers with an easy relaxed fit. Elastic waist, side pockets, tapered leg. A summer wardrobe staple.' },
-  { id: 'gid://shopify/Product/7',  title: 'Tailored Blazer',           handle: 'tailored-blazer',          collectionHandle: 'workwear-edit',       price: '119.99', description: 'A structured blazer that means business. Clean lines, button closure, interior pockets. Wear open over a tee or buttoned for meetings.' },
-  { id: 'gid://shopify/Product/8',  title: 'Ponte Pencil Skirt',        handle: 'ponte-pencil-skirt',       collectionHandle: 'workwear-edit',       price: '74.99',  description: 'A polished pencil skirt in smooth ponte fabric. Invisible back zip, knee length, slight stretch for comfort throughout the day.' },
-  { id: 'gid://shopify/Product/9',  title: 'Button-Down Shirt Dress',   handle: 'button-down-shirt-dress',  collectionHandle: 'workwear-edit',       price: '94.99',  description: 'A crisp shirt dress that works as hard as you do. Full-length buttons, belt loops with removable belt, chest pockets.' },
-  { id: 'gid://shopify/Product/10', title: 'Cozy Knit Sweater',         handle: 'cozy-knit-sweater',        collectionHandle: 'weekend-casual',      price: '69.99',  description: 'Chunky knit pullover in a soft wool-blend. Relaxed fit, ribbed cuffs and hem, cosy without feeling bulky.' },
-  { id: 'gid://shopify/Product/11', title: 'French Terry Joggers',      handle: 'french-terry-joggers',     collectionHandle: 'weekend-casual',      price: '59.99',  description: 'Elevated joggers in cozy French terry. Elasticated waist with drawstring, tapered leg, deep side pockets.' },
-  { id: 'gid://shopify/Product/12', title: 'Oversized Hoodie',          handle: 'oversized-hoodie',         collectionHandle: 'weekend-casual',      price: '79.99',  description: 'The ultimate weekend hoodie. Brushed fleece interior, kangaroo pocket, dropped shoulders for a relaxed oversized feel.' },
+  { id: 'gid://shopify/Product/1',  title: 'Floral Wrap Dress',        handle: 'floral-wrap-dress',        collectionHandle: 'spring-collection',   supplierId: 'sup-1', price: '79.99',  description: 'A breezy wrap dress in a soft floral print. Flattering tie waist, flutter sleeves, midi length. Perfect for spring outings.' },
+  { id: 'gid://shopify/Product/2',  title: 'Garden Print Blouse',       handle: 'garden-print-blouse',      collectionHandle: 'spring-collection',   supplierId: 'sup-1', price: '54.99',  description: 'Light and airy blouse with a botanical print. Relaxed fit, V-neckline, 3/4 sleeves. Pairs beautifully with jeans or trousers.' },
+  { id: 'gid://shopify/Product/3',  title: 'Midi Skirt in Sage',        handle: 'midi-skirt-sage',          collectionHandle: 'spring-collection',   supplierId: 'sup-1', price: '64.99',  description: 'Flowy midi skirt in a calming sage green. Elastic waistband for all-day comfort. Versatile enough for work or weekend.' },
+  { id: 'gid://shopify/Product/4',  title: 'Classic Jersey Tee',        handle: 'classic-jersey-tee',       collectionHandle: 'everyday-essentials', supplierId: 'sup-1', price: '34.99',  description: "The tee you'll reach for every morning. Premium cotton jersey, relaxed fit, crew neck. Available in six colours." },
+  { id: 'gid://shopify/Product/5',  title: 'High-Waist Straight Jeans', handle: 'high-waist-straight-jeans',collectionHandle: 'everyday-essentials', supplierId: 'sup-2', price: '89.99',  description: 'Straight-leg jeans cut to celebrate curves. High rise, full seat, and thigh with a straight leg from knee to hem. Our most-loved fit.' },
+  { id: 'gid://shopify/Product/6',  title: 'Relaxed Linen Pants',       handle: 'relaxed-linen-pants',      collectionHandle: 'everyday-essentials', supplierId: 'sup-1', price: '69.99',  description: 'Breathable linen trousers with an easy relaxed fit. Elastic waist, side pockets, tapered leg. A summer wardrobe staple.' },
+  { id: 'gid://shopify/Product/7',  title: 'Tailored Blazer',           handle: 'tailored-blazer',          collectionHandle: 'workwear-edit',       supplierId: 'sup-2', price: '119.99', description: 'A structured blazer that means business. Clean lines, button closure, interior pockets. Wear open over a tee or buttoned for meetings.' },
+  { id: 'gid://shopify/Product/8',  title: 'Ponte Pencil Skirt',        handle: 'ponte-pencil-skirt',       collectionHandle: 'workwear-edit',       supplierId: 'sup-2', price: '74.99',  description: 'A polished pencil skirt in smooth ponte fabric. Invisible back zip, knee length, slight stretch for comfort throughout the day.' },
+  { id: 'gid://shopify/Product/9',  title: 'Button-Down Shirt Dress',   handle: 'button-down-shirt-dress',  collectionHandle: 'workwear-edit',       supplierId: 'sup-3', price: '94.99',  description: 'A crisp shirt dress that works as hard as you do. Full-length buttons, belt loops with removable belt, chest pockets.' },
+  { id: 'gid://shopify/Product/10', title: 'Cozy Knit Sweater',         handle: 'cozy-knit-sweater',        collectionHandle: 'weekend-casual',      supplierId: 'sup-2', price: '69.99',  description: 'Chunky knit pullover in a soft wool-blend. Relaxed fit, ribbed cuffs and hem, cosy without feeling bulky.' },
+  { id: 'gid://shopify/Product/11', title: 'French Terry Joggers',      handle: 'french-terry-joggers',     collectionHandle: 'weekend-casual',      supplierId: 'sup-1', price: '59.99',  description: 'Elevated joggers in cozy French terry. Elasticated waist with drawstring, tapered leg, deep side pockets.' },
+  { id: 'gid://shopify/Product/12', title: 'Oversized Hoodie',          handle: 'oversized-hoodie',         collectionHandle: 'weekend-casual',      supplierId: 'sup-3', price: '79.99',  description: 'The ultimate weekend hoodie. Brushed fleece interior, kangaroo pocket, dropped shoulders for a relaxed oversized feel.' },
 ]
 
 const CUSTOMERS = [
@@ -330,14 +330,15 @@ async function seed() {
     for (const p of PRODUCTS) {
       await client.query(
         `INSERT INTO products
-           (id, title, handle, description, collection_handle, price_min, currency_code, images, variants)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+           (id, title, handle, description, collection_handle, supplier_id, price_min, currency_code, images, variants)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
          ON CONFLICT (id) DO UPDATE SET
            title = EXCLUDED.title, handle = EXCLUDED.handle,
            description = EXCLUDED.description, collection_handle = EXCLUDED.collection_handle,
+           supplier_id = EXCLUDED.supplier_id,
            price_min = EXCLUDED.price_min, variants = EXCLUDED.variants`,
         [
-          p.id, p.title, p.handle, p.description, p.collectionHandle,
+          p.id, p.title, p.handle, p.description, p.collectionHandle, p.supplierId,
           p.price, 'CAD', '[]',
           JSON.stringify(makeVariants(p.price)),
         ]

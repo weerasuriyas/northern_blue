@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS products (
   handle            TEXT NOT NULL UNIQUE,
   description       TEXT,
   collection_handle TEXT REFERENCES collections(handle),
+  supplier_id       TEXT REFERENCES suppliers(id),
   price_min         NUMERIC(10,2),
   currency_code     TEXT DEFAULT 'CAD',
   images            JSONB DEFAULT '[]',
