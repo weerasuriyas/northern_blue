@@ -68,6 +68,17 @@ export async function GET(request, { params }) {
     return NextResponse.json({ inventory: MOCK_INVENTORY })
   }
 
+  // --- Settings ---
+  if (path === 'settings.json') {
+    return NextResponse.json({
+      storeName: 'Northern Blue',
+      email: 'admin@northernblue.ca',
+      currency: 'CAD',
+      timezone: 'America/Toronto',
+      country: 'Canada',
+    })
+  }
+
   return NextResponse.json({ error: 'Not found' }, { status: 404 })
 }
 
