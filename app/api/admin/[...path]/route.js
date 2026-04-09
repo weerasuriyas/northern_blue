@@ -6,6 +6,7 @@ import {
   MOCK_CUSTOMERS,
   MOCK_INVENTORY,
   MOCK_DASHBOARD_STATS,
+  MOCK_RETURNS,
 } from '@/lib/mock-admin-data'
 import { MOCK_PRODUCTS } from '@/lib/mock-data'
 
@@ -68,6 +69,17 @@ export async function GET(request, { params }) {
     return NextResponse.json({ inventory: MOCK_INVENTORY })
   }
 
+  // --- Returns ---
+  if (path === 'returns.json') {
+    return NextResponse.json({ returns: MOCK_RETURNS })
+  }
+  const returnMatch = path.match(/^returns\/([^/]+)\.json$/)
+  if (returnMatch) {
+    const ret = MOCK_RETURNS.find(r => r.id === returnMatch[1])
+    if (!ret) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ return: ret })
+  }
+
   return NextResponse.json({ error: 'Not found' }, { status: 404 })
 }
 
@@ -81,6 +93,17 @@ export async function POST(request, { params }) {
   const fulfillMatch = path.match(/^orders\/([^/]+)\/fulfillments\.json$/)
   if (fulfillMatch) {
     return NextResponse.json({ fulfillment: { id: 'stub-fulfillment', status: 'success' } })
+  }
+
+  // Returns action stubs
+  if (path.match(/^returns\/([^/]+)\/approve\.json$/)) {
+    return NextResponse.json({ ok: true })
+  }
+  if (path.match(/^returns\/([^/]+)\/decline\.json$/)) {
+    return NextResponse.json({ ok: true })
+  }
+  if (path.match(/^returns\/([^/]+)\/refund\.json$/)) {
+    return NextResponse.json({ ok: true })
   }
 
   return NextResponse.json({ ok: true })
