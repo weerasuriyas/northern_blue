@@ -11,11 +11,11 @@
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
-| 3.1 | Revenue chart (dashboard) | ⬜ | Needs recharts installed |
-| 3.2 | Discounts page | ⬜ | |
-| 3.3 | Returns page | ⬜ | Most complex |
-| 3.4 | Suppliers page | ⬜ | CRUD only, no forwarding logic yet |
-| 3.5 | Settings + credential upgrade | ⬜ | Removes hardcoded admin123 |
+| 3.1 | Revenue chart (dashboard) | ✅ | recharts AreaChart on dashboard |
+| 3.2 | Discounts page | ✅ | List, create, toggle |
+| 3.3 | Returns page | ✅ | Workflow: requested → approved/declined → refunded |
+| 3.4 | Suppliers page | ✅ | CRUD only, no forwarding logic yet |
+| 3.5 | Settings + credential upgrade | ✅ | bcrypt + env vars, hardcoded password removed |
 
 ---
 
