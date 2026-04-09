@@ -3,6 +3,26 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { query } from '@/lib/db'
 
+// Reshape a DB products row into Shopify Storefront API shape
+// so admin UI components stay consistent with the storefront shape.
+function toStorefrontShape(row) {
+  return {
+    id:               row.id,
+    title:            row.title,
+    handle:           row.handle,
+    description:      row.description,
+    collectionHandle: row.collection_handle,
+    priceRange: {
+      minVariantPrice: {
+        amount:       row.price_min?.toString() ?? '0',
+        currencyCode: row.currency_code ?? 'CAD',
+      },
+    },
+    images:   { edges: (row.images   ?? []).map(img => ({ node: img })) },
+    variants: { edges: (row.variants ?? []).map(v   => ({ node: v   })) },
+  }
+}
+
 async function requireAuth() {
   const cookieStore = await cookies()
   const token = cookieStore.get('nb-admin-token')?.value
@@ -55,25 +75,17 @@ export async function GET(request, { params }) {
 
   // --- Products ---
   if (path === 'products.json') {
-    const result = await query(
-      `SELECT id, title, handle, description, collection_handle AS "collectionHandle",
-              price_min::text AS "priceMin", currency_code AS "currencyCode",
-              images, variants
-       FROM products ORDER BY title`
-    )
-    return NextResponse.json({ products: result.rows })
+    const result = await query(`SELECT * FROM products ORDER BY title`)
+    return NextResponse.json({ products: result.rows.map(toStorefrontShape) })
   }
   const productMatch = path.match(/^products\/([^/]+)\.json$/)
   if (productMatch) {
     const result = await query(
-      `SELECT id, title, handle, description, collection_handle AS "collectionHandle",
-              price_min::text AS "priceMin", currency_code AS "currencyCode",
-              images, variants
-       FROM products WHERE id = $1 OR handle = $2`,
+      `SELECT * FROM products WHERE id = $1 OR handle = $2`,
       [productMatch[1], productMatch[1]]
     )
     if (!result.rows[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    return NextResponse.json({ product: result.rows[0] })
+    return NextResponse.json({ product: toStorefrontShape(result.rows[0]) })
   }
 
   // --- Orders ---
