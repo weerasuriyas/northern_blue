@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "test": "vitest",
     "test:run": "vitest run",
-    "db:seed": "node db/seed.js"
+    "db:seed": "node db/seed.js",
+    "db:sync": "node db/sync.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
