@@ -42,9 +42,9 @@ export async function GET(request, { params }) {
   if (path === 'dashboard') {
     const [revenue, orders, customers] = await Promise.all([
       query(`SELECT COALESCE(SUM(amount),0) AS total FROM revenue
-             WHERE date >= date_trunc('month', CURRENT_DATE)`),
+             WHERE date >= DATE_FORMAT(CURRENT_DATE, '%Y-%m-01')`),
       query(`SELECT COUNT(*) AS count FROM orders
-             WHERE created_at >= date_trunc('month', CURRENT_DATE)`),
+             WHERE created_at >= DATE_FORMAT(CURRENT_DATE, '%Y-%m-01')`),
       query(`SELECT COUNT(*) AS count FROM customers`),
     ])
     const revenueThisMonth = Number(revenue.rows[0].total).toFixed(2)
@@ -67,7 +67,7 @@ export async function GET(request, { params }) {
   // --- Revenue chart ---
   if (path === 'revenue.json') {
     const result = await query(
-      `SELECT to_char(date, 'YYYY-MM-DD') AS date, amount::float AS amount
+      `SELECT DATE_FORMAT(date, '%Y-%m-%d') AS date, CAST(amount AS DOUBLE) AS amount
        FROM revenue ORDER BY date`
     )
     return NextResponse.json({ revenue: result.rows })
@@ -91,18 +91,32 @@ export async function GET(request, { params }) {
   // --- Orders ---
   if (path === 'orders.json') {
     const result = await query(
-      `SELECT o.id, o.name,
+      `SELECT o.id, o.name, o.order_number AS "orderNumber",
               o.customer_id AS "customerId", o.customer_name AS "customerName",
-              o.customer_email AS "customerEmail", o.line_items AS "lineItems",
-              o.subtotal_price::text AS "subtotalPrice", o.total_price::text AS "totalPrice",
-              o.currency_code AS "currencyCode", o.fulfillment_status AS "fulfillmentStatus",
-              o.financial_status AS "financialStatus", o.shipping_address AS "shippingAddress",
-              o.timeline, to_char(o.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt",
+              o.customer_email AS "customerEmail", o.phone,
+              o.line_items AS "lineItems",
+              o.subtotal_price AS "subtotalPrice",
+              o.total_tax      AS "totalTax",
+              o.total_price    AS "totalPrice",
+              o.taxes_included AS "taxesIncluded",
+              o.currency_code  AS "currencyCode",
+              o.fulfillment_status AS "fulfillmentStatus",
+              o.financial_status   AS "financialStatus",
+              o.shipping_address   AS "shippingAddress",
+              o.note, o.tags,
+              o.timeline,
+              DATE_FORMAT(o.created_at, '%Y-%m-%dT%H:%i:%sZ') AS "createdAt",
+              DATE_FORMAT(o.updated_at, '%Y-%m-%dT%H:%i:%sZ') AS "updatedAt",
               (
-                SELECT json_agg(DISTINCT jsonb_build_object('id', s.id, 'name', s.name))
-                FROM jsonb_array_elements(o.line_items) AS li
-                JOIN products p ON p.title = li->>'title'
-                JOIN suppliers s ON s.id = p.supplier_id
+                SELECT JSON_ARRAYAGG(JSON_OBJECT('id', sup.id, 'name', sup.name))
+                FROM (
+                  SELECT DISTINCT s.id, s.name
+                  FROM JSON_TABLE(o.line_items, '$[*]'
+                    COLUMNS (product_id VARCHAR(64) PATH '$.product_id')
+                  ) AS li
+                  JOIN products p  ON p.id = li.product_id
+                  JOIN suppliers s ON s.id = p.supplier_id
+                ) AS sup
               ) AS suppliers
        FROM orders o ORDER BY o.created_at DESC`
     )
@@ -111,25 +125,59 @@ export async function GET(request, { params }) {
   const orderMatch = path.match(/^orders\/([^/]+)\.json$/)
   if (orderMatch) {
     const result = await query(
-      `SELECT o.id, o.name,
+      `SELECT o.id, o.name, o.order_number AS "orderNumber",
               o.customer_id AS "customerId", o.customer_name AS "customerName",
-              o.customer_email AS "customerEmail",
-              o.subtotal_price::text AS "subtotalPrice", o.total_price::text AS "totalPrice",
-              o.currency_code AS "currencyCode", o.fulfillment_status AS "fulfillmentStatus",
-              o.financial_status AS "financialStatus", o.shipping_address AS "shippingAddress",
-              o.timeline, to_char(o.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt",
+              o.customer_email AS "customerEmail", o.phone,
+              o.subtotal_price AS "subtotalPrice",
+              o.total_tax      AS "totalTax",
+              o.total_price    AS "totalPrice",
+              o.taxes_included AS "taxesIncluded",
+              o.currency_code  AS "currencyCode",
+              o.fulfillment_status AS "fulfillmentStatus",
+              o.financial_status   AS "financialStatus",
+              o.shipping_address   AS "shippingAddress",
+              o.billing_address    AS "billingAddress",
+              o.note, o.tags,
+              o.timeline,
+              DATE_FORMAT(o.created_at, '%Y-%m-%dT%H:%i:%sZ') AS "createdAt",
+              DATE_FORMAT(o.updated_at, '%Y-%m-%dT%H:%i:%sZ') AS "updatedAt",
               (
-                SELECT json_agg(
-                  jsonb_build_object(
-                    'title',        li->>'title',
-                    'variantTitle', li->>'variantTitle',
-                    'quantity',     li->>'quantity',
-                    'price',        li->>'price',
-                    'supplier',     jsonb_build_object('id', s.id, 'name', s.name)
+                SELECT JSON_ARRAYAGG(
+                  JSON_OBJECT(
+                    'id',                 li.id,
+                    'product_id',         li.product_id,
+                    'variant_id',         li.variant_id,
+                    'title',              li.title,
+                    'variantTitle',       li.variant_title,
+                    'name',               li.name,
+                    'sku',                li.sku,
+                    'vendor',             li.vendor,
+                    'quantity',           li.quantity,
+                    'current_quantity',   li.current_quantity,
+                    'price',              li.price,
+                    'fulfillment_status', li.fulfillment_status,
+                    'requires_shipping',  li.requires_shipping,
+                    'taxable',            li.taxable,
+                    'supplier',           IF(s.id IS NULL, NULL, JSON_OBJECT('id', s.id, 'name', s.name))
                   )
                 )
-                FROM jsonb_array_elements(o.line_items) AS li
-                LEFT JOIN products p ON p.title = li->>'title'
+                FROM JSON_TABLE(o.line_items, '$[*]' COLUMNS (
+                  id                 VARCHAR(64)  PATH '$.id',
+                  product_id         VARCHAR(64)  PATH '$.product_id',
+                  variant_id         VARCHAR(64)  PATH '$.variant_id',
+                  title              VARCHAR(255) PATH '$.title',
+                  variant_title      VARCHAR(64)  PATH '$.variant_title',
+                  name               VARCHAR(255) PATH '$.name',
+                  sku                VARCHAR(128) PATH '$.sku',
+                  vendor             VARCHAR(255) PATH '$.vendor',
+                  quantity           INT          PATH '$.quantity',
+                  current_quantity   INT          PATH '$.current_quantity',
+                  price              VARCHAR(32)  PATH '$.price',
+                  fulfillment_status VARCHAR(32)  PATH '$.fulfillment_status',
+                  requires_shipping  JSON         PATH '$.requires_shipping',
+                  taxable            JSON         PATH '$.taxable'
+                )) AS li
+                LEFT JOIN products p  ON p.id = li.product_id
                 LEFT JOIN suppliers s ON s.id = p.supplier_id
               ) AS "lineItems"
        FROM orders o WHERE o.id = $1 OR o.name = $2`,
@@ -142,8 +190,10 @@ export async function GET(request, { params }) {
   // --- Customers ---
   if (path === 'customers.json') {
     const result = await query(
-      `SELECT id, first_name AS "firstName", last_name AS "lastName", email,
-              city, province, orders_count AS "ordersCount", total_spent::text AS "totalSpent"
+      `SELECT id, first_name AS "firstName", last_name AS "lastName", email, phone,
+              state, tags, note, tax_exempt AS "taxExempt", verified_email AS "verifiedEmail",
+              city, province, orders_count AS "ordersCount", total_spent AS "totalSpent",
+              last_order_id AS "lastOrderId", last_order_name AS "lastOrderName"
        FROM customers ORDER BY last_name, first_name`
     )
     return NextResponse.json({ customers: result.rows })
@@ -151,17 +201,19 @@ export async function GET(request, { params }) {
   const customerMatch = path.match(/^customers\/([^/]+)\.json$/)
   if (customerMatch) {
     const cResult = await query(
-      `SELECT id, first_name AS "firstName", last_name AS "lastName", email,
-              city, province, orders_count AS "ordersCount", total_spent::text AS "totalSpent"
+      `SELECT id, first_name AS "firstName", last_name AS "lastName", email, phone,
+              state, tags, note, tax_exempt AS "taxExempt", verified_email AS "verifiedEmail",
+              city, province, orders_count AS "ordersCount", total_spent AS "totalSpent",
+              last_order_id AS "lastOrderId", last_order_name AS "lastOrderName"
        FROM customers WHERE id = $1`,
       [customerMatch[1]]
     )
     if (!cResult.rows[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const oResult = await query(
       `SELECT id, name, line_items AS "lineItems",
-              total_price::text AS "totalPrice", currency_code AS "currencyCode",
+              total_price AS "totalPrice", currency_code AS "currencyCode",
               fulfillment_status AS "fulfillmentStatus", financial_status AS "financialStatus",
-              to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt"
+              DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS "createdAt"
        FROM orders WHERE customer_id = $1 ORDER BY created_at DESC`,
       [customerMatch[1]]
     )
@@ -174,10 +226,10 @@ export async function GET(request, { params }) {
       `SELECT id, order_id AS "orderId", order_name AS "orderName",
               customer_id AS "customerId", customer_name AS "customerName",
               customer_email AS "customerEmail",
-              to_char(requested_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "requestedAt",
-              reason, items, refund_amount::text AS "refundAmount",
+              DATE_FORMAT(requested_at, '%Y-%m-%dT%H:%i:%sZ') AS "requestedAt",
+              reason, items, refund_amount AS "refundAmount",
               currency_code AS "currencyCode", status, timeline, notes
-       FROM returns ORDER BY requested_at DESC`
+       FROM \`returns\` ORDER BY requested_at DESC`
     )
     return NextResponse.json({ returns: result.rows })
   }
@@ -187,10 +239,10 @@ export async function GET(request, { params }) {
       `SELECT id, order_id AS "orderId", order_name AS "orderName",
               customer_id AS "customerId", customer_name AS "customerName",
               customer_email AS "customerEmail",
-              to_char(requested_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "requestedAt",
-              reason, items, refund_amount::text AS "refundAmount",
+              DATE_FORMAT(requested_at, '%Y-%m-%dT%H:%i:%sZ') AS "requestedAt",
+              reason, items, refund_amount AS "refundAmount",
               currency_code AS "currencyCode", status, timeline, notes
-       FROM returns WHERE id = $1`,
+       FROM \`returns\` WHERE id = $1`,
       [returnMatch[1]]
     )
     if (!result.rows[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -234,11 +286,11 @@ export async function GET(request, { params }) {
   // --- Discounts ---
   if (path === 'discounts.json') {
     const result = await query(
-      `SELECT id, code, type, value::float AS value,
-              min_order_amount::text AS "minOrderAmount",
+      `SELECT id, code, type, CAST(value AS DOUBLE) AS value,
+              min_order_amount AS "minOrderAmount",
               usage_limit AS "usageLimit", usage_count AS "usageCount",
-              to_char(starts_at, 'YYYY-MM-DD') AS "startsAt",
-              to_char(expires_at, 'YYYY-MM-DD') AS "expiresAt",
+              DATE_FORMAT(starts_at,  '%Y-%m-%d') AS "startsAt",
+              DATE_FORMAT(expires_at, '%Y-%m-%d') AS "expiresAt",
               active, summary
        FROM discounts ORDER BY created_at DESC`
     )
@@ -247,11 +299,11 @@ export async function GET(request, { params }) {
   const discountMatch = path.match(/^discounts\/([^/]+)\.json$/)
   if (discountMatch) {
     const result = await query(
-      `SELECT id, code, type, value::float AS value,
-              min_order_amount::text AS "minOrderAmount",
+      `SELECT id, code, type, CAST(value AS DOUBLE) AS value,
+              min_order_amount AS "minOrderAmount",
               usage_limit AS "usageLimit", usage_count AS "usageCount",
-              to_char(starts_at, 'YYYY-MM-DD') AS "startsAt",
-              to_char(expires_at, 'YYYY-MM-DD') AS "expiresAt",
+              DATE_FORMAT(starts_at,  '%Y-%m-%d') AS "startsAt",
+              DATE_FORMAT(expires_at, '%Y-%m-%d') AS "expiresAt",
               active, summary
        FROM discounts WHERE id = $1`,
       [discountMatch[1]]
@@ -260,9 +312,51 @@ export async function GET(request, { params }) {
     return NextResponse.json({ discount: result.rows[0] })
   }
 
+  // --- Supplier Orders ---
+  if (path === 'supplier-orders.json') {
+    const result = await query(
+      `SELECT id, order_id AS "orderId", order_name AS "orderName",
+              supplier_id AS "supplierId", supplier_name AS "supplierName",
+              items, shipping_address AS "shippingAddress",
+              status, reference, notes, tracking_number AS "trackingNumber",
+              tracking_company AS "trackingCompany",
+              DATE_FORMAT(sent_at, '%Y-%m-%dT%H:%i:%sZ') AS "sentAt"
+       FROM supplier_orders ORDER BY sent_at DESC`
+    )
+    return NextResponse.json({ supplierOrders: result.rows })
+  }
+  const supplierOrdersByOrderMatch = path.match(/^orders\/([^/]+)\/supplier-orders\.json$/)
+  if (supplierOrdersByOrderMatch) {
+    const result = await query(
+      `SELECT id, order_id AS "orderId", order_name AS "orderName",
+              supplier_id AS "supplierId", supplier_name AS "supplierName",
+              items, shipping_address AS "shippingAddress",
+              status, reference, notes, tracking_number AS "trackingNumber",
+              tracking_company AS "trackingCompany",
+              DATE_FORMAT(sent_at, '%Y-%m-%dT%H:%i:%sZ') AS "sentAt"
+       FROM supplier_orders WHERE order_id = $1 ORDER BY sent_at`,
+      [supplierOrdersByOrderMatch[1]]
+    )
+    return NextResponse.json({ supplierOrders: result.rows })
+  }
+  const supplierOrdersBySupplierMatch = path.match(/^suppliers\/([^/]+)\/supplier-orders\.json$/)
+  if (supplierOrdersBySupplierMatch) {
+    const result = await query(
+      `SELECT id, order_id AS "orderId", order_name AS "orderName",
+              supplier_id AS "supplierId", supplier_name AS "supplierName",
+              items, shipping_address AS "shippingAddress",
+              status, reference, notes, tracking_number AS "trackingNumber",
+              tracking_company AS "trackingCompany",
+              DATE_FORMAT(sent_at, '%Y-%m-%dT%H:%i:%sZ') AS "sentAt"
+       FROM supplier_orders WHERE supplier_id = $1 ORDER BY sent_at DESC`,
+      [supplierOrdersBySupplierMatch[1]]
+    )
+    return NextResponse.json({ supplierOrders: result.rows })
+  }
+
   // --- Settings ---
   if (path === 'settings.json') {
-    const result = await query(`SELECT key, value FROM settings`)
+    const result = await query('SELECT `key`, `value` FROM settings')
     const settings = Object.fromEntries(result.rows.map(r => [r.key, r.value]))
     return NextResponse.json({
       storeName: settings.store_name,
@@ -324,12 +418,35 @@ export async function POST(request, { params }) {
     return NextResponse.json({ ok: true, discount: { id } })
   }
 
+  // Create supplier order (forward to supplier)
+  if (path === 'supplier-orders.json') {
+    const id = `so-${body.orderId}-${body.supplierId}-${Date.now()}`
+    const ref = `NB-${body.orderName?.replace('#', '')}-${body.supplierId?.toUpperCase()}`
+    await query(
+      `INSERT INTO supplier_orders
+         (id, order_id, order_name, supplier_id, supplier_name,
+          items, shipping_address, status, reference, notes, sent_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'sent',$8,$9,NOW())`,
+      [
+        id, body.orderId, body.orderName, body.supplierId, body.supplierName,
+        JSON.stringify(body.items ?? []), JSON.stringify(body.shippingAddress ?? {}),
+        ref, body.notes ?? '',
+      ]
+    )
+    // Add timeline entry to order
+    await query(
+      `UPDATE orders SET timeline = JSON_MERGE_PRESERVE(timeline, CAST($2 AS JSON)) WHERE id = $1`,
+      [body.orderId, JSON.stringify([{ at: new Date().toISOString(), message: `Order forwarded to ${body.supplierName} (ref: ${ref})` }])]
+    )
+    return NextResponse.json({ ok: true, supplierOrder: { id, reference: ref } })
+  }
+
   // Returns actions
   const approveMatch = path.match(/^returns\/([^/]+)\/approve\.json$/)
   if (approveMatch) {
     await query(
-      `UPDATE returns SET status = 'approved',
-         timeline = timeline || $2::jsonb
+      `UPDATE \`returns\` SET status = 'approved',
+         timeline = JSON_MERGE_PRESERVE(timeline, CAST($2 AS JSON))
        WHERE id = $1`,
       [approveMatch[1], JSON.stringify([{ at: new Date().toISOString(), message: 'Return approved by admin' }])]
     )
@@ -338,8 +455,8 @@ export async function POST(request, { params }) {
   const declineMatch = path.match(/^returns\/([^/]+)\/decline\.json$/)
   if (declineMatch) {
     await query(
-      `UPDATE returns SET status = 'declined',
-         timeline = timeline || $2::jsonb
+      `UPDATE \`returns\` SET status = 'declined',
+         timeline = JSON_MERGE_PRESERVE(timeline, CAST($2 AS JSON))
        WHERE id = $1`,
       [declineMatch[1], JSON.stringify([{ at: new Date().toISOString(), message: 'Return declined by admin' }])]
     )
@@ -347,11 +464,11 @@ export async function POST(request, { params }) {
   }
   const refundMatch = path.match(/^returns\/([^/]+)\/refund\.json$/)
   if (refundMatch) {
-    const ret = await query(`SELECT refund_amount, currency_code FROM returns WHERE id = $1`, [refundMatch[1]])
+    const ret = await query('SELECT refund_amount, currency_code FROM `returns` WHERE id = $1', [refundMatch[1]])
     const r = ret.rows[0]
     await query(
-      `UPDATE returns SET status = 'refunded',
-         timeline = timeline || $2::jsonb
+      `UPDATE \`returns\` SET status = 'refunded',
+         timeline = JSON_MERGE_PRESERVE(timeline, CAST($2 AS JSON))
        WHERE id = $1`,
       [refundMatch[1], JSON.stringify([{ at: new Date().toISOString(), message: `Refund of $${r?.refund_amount} ${r?.currency_code} issued` }])]
     )
@@ -366,6 +483,7 @@ export async function PUT(request, { params }) {
   if (authError) return authError
 
   const path = (await params).path.join('/')
+  const body = await request.json().catch(() => ({}))
 
   // Toggle discount active state
   const toggleMatch = path.match(/^discounts\/([^/]+)\/toggle\.json$/)
@@ -373,6 +491,20 @@ export async function PUT(request, { params }) {
     await query(
       `UPDATE discounts SET active = NOT active WHERE id = $1`,
       [toggleMatch[1]]
+    )
+    return NextResponse.json({ ok: true })
+  }
+
+  // Update supplier order tracking / status
+  const soTrackingMatch = path.match(/^supplier-orders\/([^/]+)\.json$/)
+  if (soTrackingMatch) {
+    await query(
+      `UPDATE supplier_orders
+       SET tracking_number = COALESCE($2, tracking_number),
+           tracking_company = COALESCE($3, tracking_company),
+           status = COALESCE($4, status)
+       WHERE id = $1`,
+      [soTrackingMatch[1], body.trackingNumber ?? null, body.trackingCompany ?? null, body.status ?? null]
     )
     return NextResponse.json({ ok: true })
   }

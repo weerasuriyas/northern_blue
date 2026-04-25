@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Bulk sync from Shopify Admin API → Postgres.
+// Bulk sync from Shopify Admin API → MySQL.
 // Run before go-live, or after downtime to catch missed webhooks.
 //
 //   npm run db:sync              — sync everything
@@ -8,13 +8,19 @@
 //   npm run db:sync -- inventory — sync only inventory
 //   npm run db:sync -- discounts — sync only discounts
 
-import pg from 'pg'
+import mysql from 'mysql2/promise'
 
-const { Pool } = pg
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://northern_blue:northern_blue@localhost:5432/northern_blue',
-})
+const pool = mysql.createPool(
+  process.env.DATABASE_URL || {
+    host:     'localhost',
+    port:      3306,
+    user:     'northern_blue',
+    password: 'northern_blue',
+    database: 'northern_blue',
+    waitForConnections: true,
+    connectionLimit: 5,
+  }
+)
 
 const SHOPIFY_DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN
 const SHOPIFY_TOKEN  = process.env.SHOPIFY_ADMIN_API_TOKEN
@@ -66,26 +72,32 @@ async function shopifyGetAll(path, key) {
   return results
 }
 
+// MySQL DATETIME format
+function dt(iso) {
+  if (iso == null) return null
+  return String(iso).replace('T', ' ').replace(/\.\d+Z?$/, '').replace(/Z$/, '')
+}
+
 // --- Sync functions ---
 
-async function syncCustomers(client) {
+async function syncCustomers(conn) {
   console.log('Syncing customers...')
   const customers = await shopifyGetAll('/customers.json?limit=250', 'customers')
   if (!customers.length) { console.log('  (no data — Shopify not connected)'); return }
 
   for (const c of customers) {
-    await client.query(
+    await conn.query(
       `INSERT INTO customers
          (id, first_name, last_name, email, city, province, orders_count, total_spent)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-       ON CONFLICT (id) DO UPDATE SET
-         first_name   = EXCLUDED.first_name,
-         last_name    = EXCLUDED.last_name,
-         email        = EXCLUDED.email,
-         city         = EXCLUDED.city,
-         province     = EXCLUDED.province,
-         orders_count = EXCLUDED.orders_count,
-         total_spent  = EXCLUDED.total_spent`,
+       VALUES (?,?,?,?,?,?,?,?)
+       ON DUPLICATE KEY UPDATE
+         first_name   = VALUES(first_name),
+         last_name    = VALUES(last_name),
+         email        = VALUES(email),
+         city         = VALUES(city),
+         province     = VALUES(province),
+         orders_count = VALUES(orders_count),
+         total_spent  = VALUES(total_spent)`,
       [
         String(c.id),
         c.first_name, c.last_name, c.email,
@@ -99,7 +111,7 @@ async function syncCustomers(client) {
   console.log(`  ✓ ${customers.length} customers`)
 }
 
-async function syncOrders(client) {
+async function syncOrders(conn) {
   console.log('Syncing orders...')
   const orders = await shopifyGetAll('/orders.json?status=any&limit=250', 'orders')
   if (!orders.length) { console.log('  (no data — Shopify not connected)'); return }
@@ -116,21 +128,21 @@ async function syncOrders(client) {
       quantity: item.quantity, price: item.price,
     }))
 
-    await client.query(
+    await conn.query(
       `INSERT INTO orders
          (id, name, customer_id, customer_name, customer_email,
           line_items, subtotal_price, total_price, currency_code,
           fulfillment_status, financial_status, shipping_address, timeline, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-       ON CONFLICT (id) DO UPDATE SET
-         name               = EXCLUDED.name,
-         line_items         = EXCLUDED.line_items,
-         subtotal_price     = EXCLUDED.subtotal_price,
-         total_price        = EXCLUDED.total_price,
-         fulfillment_status = EXCLUDED.fulfillment_status,
-         financial_status   = EXCLUDED.financial_status,
-         shipping_address   = EXCLUDED.shipping_address,
-         timeline           = EXCLUDED.timeline`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+       ON DUPLICATE KEY UPDATE
+         name               = VALUES(name),
+         line_items         = VALUES(line_items),
+         subtotal_price     = VALUES(subtotal_price),
+         total_price        = VALUES(total_price),
+         fulfillment_status = VALUES(fulfillment_status),
+         financial_status   = VALUES(financial_status),
+         shipping_address   = VALUES(shipping_address),
+         timeline           = VALUES(timeline)`,
       [
         String(o.id), o.name,
         o.customer ? String(o.customer.id) : null,
@@ -142,7 +154,7 @@ async function syncOrders(client) {
         o.financial_status ?? 'pending',
         JSON.stringify(shippingAddress),
         JSON.stringify([{ at: o.created_at, message: 'Order placed' }]),
-        o.created_at,
+        dt(o.created_at),
       ]
     )
     revenueDates.add(o.created_at.slice(0, 10))
@@ -150,19 +162,19 @@ async function syncOrders(client) {
 
   // Recalculate revenue for all affected dates
   for (const date of revenueDates) {
-    await client.query(
+    await conn.query(
       `INSERT INTO revenue (date, amount)
-       SELECT $1::date, COALESCE(SUM(total_price), 0)
+       SELECT ?, COALESCE(SUM(total_price), 0)
        FROM orders
-       WHERE DATE(created_at) = $1::date AND financial_status = 'paid'
-       ON CONFLICT (date) DO UPDATE SET amount = EXCLUDED.amount`,
-      [date]
+       WHERE DATE(created_at) = ? AND financial_status = 'paid'
+       ON DUPLICATE KEY UPDATE amount = VALUES(amount)`,
+      [date, date]
     )
   }
   console.log(`  ✓ ${orders.length} orders, revenue recalculated for ${revenueDates.size} dates`)
 }
 
-async function syncInventory(client) {
+async function syncInventory(conn) {
   console.log('Syncing inventory...')
   // To get titles we need to go through products → variants → inventory_item_id
   const products = await shopifyGetAll('/products.json?limit=250', 'products')
@@ -177,13 +189,13 @@ async function syncInventory(client) {
       const available = levels?.inventory_levels?.[0]?.available ?? 0
       const id = `inv-${variant.inventory_item_id}`
 
-      await client.query(
+      await conn.query(
         `INSERT INTO inventory (id, product_title, variant_title, available)
-         VALUES ($1,$2,$3,$4)
-         ON CONFLICT (id) DO UPDATE SET
-           product_title = EXCLUDED.product_title,
-           variant_title = EXCLUDED.variant_title,
-           available     = EXCLUDED.available`,
+         VALUES (?,?,?,?)
+         ON DUPLICATE KEY UPDATE
+           product_title = VALUES(product_title),
+           variant_title = VALUES(variant_title),
+           available     = VALUES(available)`,
         [id, product.title, variant.title, available]
       )
       count++
@@ -192,7 +204,7 @@ async function syncInventory(client) {
   console.log(`  ✓ ${count} inventory rows`)
 }
 
-async function syncDiscounts(client) {
+async function syncDiscounts(conn) {
   console.log('Syncing discounts...')
   const priceRules = await shopifyGetAll('/price_rules.json?limit=250', 'price_rules')
   if (!priceRules.length) { console.log('  (no data — Shopify not connected)'); return }
@@ -207,15 +219,15 @@ async function syncDiscounts(client) {
         'free_shipping'
       const value = Math.abs(Number(rule.value))
 
-      await client.query(
+      await conn.query(
         `INSERT INTO discounts
            (id, code, type, value, min_order_amount, usage_limit,
             usage_count, starts_at, expires_at, active, summary)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-         ON CONFLICT (id) DO UPDATE SET
-           code = EXCLUDED.code, type = EXCLUDED.type,
-           value = EXCLUDED.value, usage_count = EXCLUDED.usage_count,
-           active = EXCLUDED.active`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)
+         ON DUPLICATE KEY UPDATE
+           code = VALUES(code), type = VALUES(type),
+           value = VALUES(value), usage_count = VALUES(usage_count),
+           active = VALUES(active)`,
         [
           `shopify-${rule.id}`,
           code.code, type, value,
@@ -224,7 +236,7 @@ async function syncDiscounts(client) {
           code.usage_count ?? 0,
           rule.starts_at?.slice(0, 10) ?? null,
           rule.ends_at?.slice(0, 10)   ?? null,
-          true,
+          1,
           type === 'percentage' ? `${value}% off` : type === 'fixed_amount' ? `$${value} off` : 'Free shipping',
         ]
       )
@@ -238,24 +250,24 @@ async function syncDiscounts(client) {
 
 async function main() {
   const target = process.argv[2] // optional: 'orders' | 'customers' | 'inventory' | 'discounts'
-  const client = await pool.connect()
+  const conn = await pool.getConnection()
 
   try {
-    await client.query('BEGIN')
+    await conn.beginTransaction()
 
-    if (!target || target === 'customers') await syncCustomers(client)
-    if (!target || target === 'orders')    await syncOrders(client)
-    if (!target || target === 'inventory') await syncInventory(client)
-    if (!target || target === 'discounts') await syncDiscounts(client)
+    if (!target || target === 'customers') await syncCustomers(conn)
+    if (!target || target === 'orders')    await syncOrders(conn)
+    if (!target || target === 'inventory') await syncInventory(conn)
+    if (!target || target === 'discounts') await syncDiscounts(conn)
 
-    await client.query('COMMIT')
+    await conn.commit()
     console.log('✓ Sync complete')
   } catch (err) {
-    await client.query('ROLLBACK')
+    await conn.rollback()
     console.error('Sync failed:', err.message)
     process.exit(1)
   } finally {
-    client.release()
+    conn.release()
     await pool.end()
   }
 }

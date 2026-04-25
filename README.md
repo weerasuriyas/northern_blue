@@ -1,12 +1,12 @@
 # Northern Blue
 
-Plus-size women's clothing brand. Built with Next.js 15, Tailwind CSS, PostgreSQL, and Shopify (storefront + admin).
+Plus-size women's clothing brand. Built with Next.js 15, Tailwind CSS, MySQL, and Shopify (storefront + admin).
 
 ## Stack
 
 - **Framework:** Next.js 15 (App Router, SSR)
 - **Styling:** Tailwind CSS 3
-- **Database:** PostgreSQL 16 (Docker) — cache + extension layer
+- **Database:** MySQL 9 (Docker) — cache + extension layer
 - **E-commerce:** Shopify Storefront API (cart, checkout) + Shopify Admin API (orders, products, customers)
 - **Auth:** JWT via httpOnly cookie + bcrypt password hashing (admin panel)
 - **Testing:** Vitest + Testing Library (36 tests)
@@ -16,7 +16,7 @@ Plus-size women's clothing brand. Built with Next.js 15, Tailwind CSS, PostgreSQ
 ### 1. Start the database
 
 ```bash
-docker compose up -d   # starts postgres:16 on port 5432
+docker compose up -d   # starts mysql:latest on port 3306
 npm run db:seed        # populate all tables with dev data
 ```
 
@@ -43,7 +43,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Database
 
-All application data lives in PostgreSQL. The DB is the **cache layer** — Shopify is the source of truth for commerce data, and our DB stays in sync via webhooks.
+All application data lives in MySQL. The DB is the **cache layer** — Shopify is the source of truth for commerce data, and our DB stays in sync via webhooks.
 
 ### Tables
 
@@ -63,7 +63,7 @@ All application data lives in PostgreSQL. The DB is the **cache layer** — Shop
 ### Commands
 
 ```bash
-docker compose up -d       # start Postgres
+docker compose up -d       # start MySQL
 docker compose down        # stop (data persists in volume)
 docker compose down -v     # stop + wipe all data
 
@@ -77,7 +77,7 @@ npm run db:sync -- orders  # sync only one table (orders | customers | inventory
 ```
 Shopify (source of truth)
     ↕  webhooks + Admin API
-Postgres (cache + extensions)
+MySQL (cache + extensions)
     ↕
 Next.js API routes
   reads  → always hit DB (fast, no rate limits)
@@ -105,7 +105,7 @@ components/             # Shared UI (Navbar, Footer, Hero, etc.)
 storefront/             # Storefront components (ProductCard, CartDrawer, etc.)
 admin/components/       # Admin components (DataTable, StatsCard, AdminSidebar, etc.)
 lib/
-  db.js                 # pg connection pool
+  db.js                 # mysql2 connection pool ($N→? placeholder shim)
   sync.js               # Upsert helpers called by webhook handler + bulk sync
   shopify.js            # Storefront API client (reads from DB, swaps to GraphQL later)
   auth.js               # JWT sign/verify + bcrypt credential check
@@ -128,7 +128,7 @@ Copy `.env.example` to `.env.local`:
 
 ```env
 # Database
-DATABASE_URL=postgresql://northern_blue:northern_blue@localhost:5432/northern_blue
+DATABASE_URL=mysql://northern_blue:northern_blue@localhost:3306/northern_blue
 
 # Admin auth
 ADMIN_JWT_SECRET=a-long-random-secret-at-least-32-chars
@@ -192,8 +192,8 @@ See [`docs/ecommerce-integration-plan.md`](docs/ecommerce-integration-plan.md) a
 ## Commands
 
 ```bash
-npm run dev          # Start dev server (http://localhost:3000)
-npm run build        # Production build
+npm run dev          # Dev server with Turbopack (http://localhost:3000)
+npm run build        # Production build (Turbopack)
 npm run start        # Start production server
 npm test             # Run tests (watch mode)
 npm run test:run     # Run tests once

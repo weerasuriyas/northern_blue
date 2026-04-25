@@ -4,7 +4,8 @@ import CollectionHeader from '@/storefront/CollectionHeader'
 import ProductCard from '@/storefront/ProductCard'
 
 export async function generateMetadata({ params }) {
-  const collection = await getCollectionByHandle(params.handle)
+  const { handle } = await params
+  const collection = await getCollectionByHandle(handle)
   if (!collection) return {}
   return {
     title: `${collection.title} — Northern Blue`,
@@ -13,7 +14,8 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function CollectionPage({ params }) {
-  const collection = await getCollectionByHandle(params.handle)
+  const { handle } = await params
+  const collection = await getCollectionByHandle(handle)
   if (!collection) notFound()
 
   const products = collection.products.edges.map(e => e.node)
