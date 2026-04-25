@@ -231,13 +231,43 @@ SHOPIFY_WEBHOOK_SECRET=your-webhook-signing-secret
 
 ---
 
-## Build Order (When Ready)
+## Build Order
 
-1. **Manual first** — build the suppliers admin page (list, add, edit) with manual order forwarding UI
-2. **Email forwarding** — "Forward to Supplier" button generates and sends a formatted email
-3. **Webhook listener** — set up the Shopify webhook endpoint for auto-forwarding
-4. **API integration** — connect suppliers that have their own APIs
-5. **Shopify Collective** — migrate to native if supplier joins Shopify
+1. ✅ **Manual first** — suppliers admin page (list, add, detail) + `supplier_orders` table + "Forward to Supplier" button on order detail
+2. ✅ **Receipt/PO tracking** — reference number per forwarded order (e.g. `NB-1001-SUP1`), per-supplier cards on order detail, tracking number entry, status lifecycle (sent → confirmed → shipped)
+3. ✅ **Supplier order history** — supplier detail page shows all forwarded orders with status + tracking
+4. ✅ **Webhook listener** — `app/api/webhooks/shopify/route.js` receives Shopify order events (HMAC verified)
+5. ⬜ **Email forwarding** — "Forward to Supplier" button sends a formatted email via Resend/Nodemailer
+6. ⬜ **API integration** — auto-forward to suppliers that have their own REST APIs (`integrationType: 'api'`)
+7. ⬜ **Shopify Collective** — migrate to native if supplier joins Shopify
+
+## What's Built (as of April 2026)
+
+### `supplier_orders` table
+Tracks every forwarded purchase order:
+- `id`, `order_id`, `supplier_id` — references
+- `reference` — auto-generated PO ref e.g. `NB-1001-SUP1`
+- `items` — JSON: what was ordered (title, variantTitle, qty, price)
+- `shipping_address` — JSON: where to ship it
+- `status` — `pending` → `sent` → `confirmed` → `shipped`
+- `tracking_number`, `tracking_company` — filled when supplier ships
+- `sent_at`, `created_at`
+
+### API endpoints
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/admin/supplier-orders.json` | All supplier orders |
+| GET | `/api/admin/orders/[id]/supplier-orders.json` | Supplier orders for an order |
+| GET | `/api/admin/suppliers/[id]/supplier-orders.json` | Supplier orders for a supplier |
+| POST | `/api/admin/supplier-orders.json` | Forward items to a supplier (creates PO + timeline entry) |
+| PUT | `/api/admin/supplier-orders/[id].json` | Update tracking number / status |
+
+### UI
+- **Order detail page** — "Supplier Orders" section shows:
+  - Existing forwarded orders per supplier (status, ref, items, tracking)
+  - "Forward to Supplier" panel for items not yet forwarded (grouped by supplier)
+  - Tracking number entry inline (marks as shipped)
+- **Supplier detail page** — "Order History" table shows all POs with order link, ref, items, status, tracking
 
 ---
 
