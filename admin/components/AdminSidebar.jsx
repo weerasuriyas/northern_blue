@@ -54,8 +54,20 @@ export default function AdminSidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-4 border-t border-gray-100">
-        <Link href="/" className="text-xs text-gray-400 hover:text-nb-blue transition-colors">
+      <div className="px-3 py-4 border-t border-gray-100 space-y-2">
+        <a
+          href="/architecture.html"
+          target="_blank"
+          rel="noopener"
+          className="flex items-center gap-2 text-xs text-gray-500 hover:text-nb-blue transition-colors"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14 16l3 3 5-5" />
+          </svg>
+          Architecture dashboard ↗
+        </a>
+        <Link href="/" className="block text-xs text-gray-400 hover:text-nb-blue transition-colors">
           ← View store
         </Link>
       </div>

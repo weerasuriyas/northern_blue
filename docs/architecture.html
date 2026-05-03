@@ -1,0 +1,1118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Northern Blue · Architecture Dashboard</title>
+<style>
+  :root {
+    --bg:        #0b1020;
+    --bg-2:      #111933;
+    --bg-3:      #182148;
+    --line:      #2a3566;
+    --line-2:    #3a467a;
+    --text:      #e6ecff;
+    --muted:     #9aa6cc;
+    --dim:       #6b78a3;
+    --accent:    #6aa9ff;        /* Next.js / API routes */
+    --shop:      #95f3a1;        /* Shopify */
+    --db:        #ffb86b;        /* MySQL */
+    --admin:     #d29bff;        /* Admin panel */
+    --store:     #79e6ff;        /* Storefront */
+    --warn:      #ff8aa1;
+    --ok:        #95f3a1;
+    --pill:      #1a2552;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter",
+                 system-ui, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(1200px 800px at 20% -10%, #1a2356 0%, transparent 60%),
+                radial-gradient(900px 700px at 110% 10%, #1d2a66 0%, transparent 55%),
+                var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  code, pre, .mono {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, monospace;
+    font-size: 12.5px;
+  }
+
+  /* ------ top bar ------ */
+  header.top {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(14px);
+    background: rgba(11, 16, 32, 0.78);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 24px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    font-weight: 600; letter-spacing: 0.3px;
+  }
+  .brand .logo {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: linear-gradient(135deg, #6aa9ff 0%, #95f3a1 100%);
+    box-shadow: 0 0 24px rgba(106,169,255,0.45);
+  }
+  .brand .sub { color: var(--muted); font-weight: 400; font-size: 13px; }
+
+  nav.toc {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  nav.toc a {
+    color: var(--muted); text-decoration: none;
+    padding: 6px 11px; border-radius: 999px;
+    font-size: 12.5px;
+    border: 1px solid transparent;
+    transition: all .15s ease;
+  }
+  nav.toc a:hover { color: var(--text); background: var(--pill); border-color: var(--line); }
+
+  .stat-pills {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .pill {
+    padding: 5px 10px; border-radius: 999px;
+    background: var(--pill); border: 1px solid var(--line);
+    font-size: 11.5px; color: var(--muted);
+  }
+  .pill b { color: var(--text); font-weight: 600; }
+
+  main { max-width: 1480px; margin: 0 auto; padding: 28px 28px 80px; }
+
+  section {
+    margin-bottom: 44px;
+  }
+  h1 { font-size: 26px; margin: 4px 0 4px; }
+  h2 {
+    font-size: 17px; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 10px;
+    letter-spacing: 0.2px;
+  }
+  h2::before {
+    content: ""; display: inline-block;
+    width: 4px; height: 17px; border-radius: 2px;
+    background: var(--accent);
+  }
+  h3 { font-size: 14px; margin: 18px 0 8px; color: var(--text); }
+  p, li { color: var(--text); }
+  .muted { color: var(--muted); }
+  .dim { color: var(--dim); font-size: 12.5px; }
+
+  /* ------ hero ------ */
+  .hero-grid {
+    display: grid; gap: 14px;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+  }
+  .card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)) , var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .card.kpi {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .kpi .num { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .kpi .label { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.7px; }
+  .kpi .foot  { color: var(--dim); font-size: 12px; }
+
+  .stack-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .chip {
+    font-size: 11.5px; padding: 4px 9px; border-radius: 999px;
+    background: rgba(106,169,255,0.10); color: #cfdcff;
+    border: 1px solid rgba(106,169,255,0.25);
+  }
+  .chip.alt   { background: rgba(149,243,161,0.10); color: #d6ffdf; border-color: rgba(149,243,161,0.25); }
+  .chip.alt2  { background: rgba(255,184,107,0.10); color: #ffe7c9; border-color: rgba(255,184,107,0.25); }
+  .chip.alt3  { background: rgba(210,155,255,0.10); color: #efdcff; border-color: rgba(210,155,255,0.25); }
+
+  /* ------ architecture diagram ------ */
+  .arch {
+    position: relative;
+    padding: 30px 22px 22px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background:
+      radial-gradient(600px 300px at 50% -10%, rgba(106,169,255,0.10), transparent 70%),
+      var(--bg-2);
+  }
+  .arch-grid {
+    display: grid; gap: 18px;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: stretch;
+  }
+  .col-stack { display: flex; flex-direction: column; gap: 14px; }
+  .node {
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    padding: 13px 14px;
+    background: var(--bg-3);
+    transition: all .15s ease;
+  }
+  .node:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .node .ttl {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 600; font-size: 13.5px;
+  }
+  .node .ttl .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .node .desc { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .node ul { margin: 8px 0 0; padding-left: 16px; }
+  .node ul li { font-size: 12px; color: var(--muted); margin: 2px 0; }
+  .node ul li code { color: #cfdcff; }
+
+  .node.store .dot   { background: var(--store); box-shadow: 0 0 12px var(--store); }
+  .node.admin .dot   { background: var(--admin); box-shadow: 0 0 12px var(--admin); }
+  .node.api .dot     { background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+  .node.db .dot      { background: var(--db); box-shadow: 0 0 12px var(--db); }
+  .node.shop .dot    { background: var(--shop); box-shadow: 0 0 12px var(--shop); }
+  .node.lib .dot     { background: #c0c8e8; box-shadow: 0 0 8px #c0c8e8; }
+
+  .arrow-row {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    color: var(--dim); font-size: 11px; padding: 6px 0;
+  }
+  .arrow {
+    flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--line-2), transparent);
+    position: relative;
+  }
+  .arrow::after {
+    content: "▶"; position: absolute; right: -2px; top: -7px;
+    color: var(--line-2); font-size: 10px;
+  }
+  .arrow.bi::before {
+    content: "◀"; position: absolute; left: -2px; top: -7px;
+    color: var(--line-2); font-size: 10px;
+  }
+  .arrow-label {
+    position: absolute; background: var(--bg-2);
+    padding: 0 10px; color: var(--muted); font-size: 11px;
+  }
+
+  .col-head {
+    text-align: center; font-size: 11.5px; letter-spacing: 0.6px;
+    text-transform: uppercase; color: var(--dim); margin-bottom: 4px;
+  }
+
+  /* ------ tables / lists ------ */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td {
+    text-align: left; padding: 9px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th { color: var(--muted); font-weight: 500; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.6px; }
+  td.path code { color: #cfdcff; }
+
+  .method {
+    display: inline-block; min-width: 44px; text-align: center;
+    padding: 2px 6px; border-radius: 4px;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.5px;
+  }
+  .method.GET    { background: rgba(106,169,255,0.18); color: #b8d2ff; }
+  .method.POST   { background: rgba(149,243,161,0.18); color: #c8ffd1; }
+  .method.PUT    { background: rgba(255,184,107,0.18); color: #ffd9ad; }
+  .method.DELETE { background: rgba(255,138,161,0.18); color: #ffc7d2; }
+
+  .tag {
+    display: inline-block; padding: 1px 7px; border-radius: 4px;
+    font-size: 11px; background: var(--pill); color: var(--muted);
+    border: 1px solid var(--line);
+  }
+  .tag.auth { color: #ffd9ad; border-color: rgba(255,184,107,0.4); background: rgba(255,184,107,0.10); }
+  .tag.pub  { color: #c8ffd1; border-color: rgba(149,243,161,0.4); background: rgba(149,243,161,0.10); }
+  .tag.hmac { color: #ffc7d2; border-color: rgba(255,138,161,0.4); background: rgba(255,138,161,0.10); }
+
+  /* ------ schema (tables) ------ */
+  .schema-grid {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .table-card {
+    border: 1px solid var(--line); border-radius: 12px;
+    background: var(--bg-2); overflow: hidden;
+  }
+  .table-card .th {
+    padding: 10px 12px; background: var(--bg-3);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+    font-weight: 600; font-size: 13.5px;
+  }
+  .table-card .th .owner {
+    font-size: 10.5px; padding: 2px 7px; border-radius: 999px;
+    background: var(--pill); color: var(--muted); border: 1px solid var(--line);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .table-card .th .owner.shopify { color: #d6ffdf; border-color: rgba(149,243,161,0.4); background: rgba(149,243,161,0.10); }
+  .table-card .th .owner.ours    { color: #efdcff; border-color: rgba(210,155,255,0.4); background: rgba(210,155,255,0.10); }
+  .table-card .th .owner.derived { color: #ffd9ad; border-color: rgba(255,184,107,0.4); background: rgba(255,184,107,0.10); }
+  .table-card ul {
+    list-style: none; margin: 0; padding: 6px 0;
+  }
+  .table-card li {
+    padding: 4px 12px; font-size: 12px; color: var(--muted);
+    display: flex; justify-content: space-between; gap: 8px;
+  }
+  .table-card li b { color: var(--text); font-weight: 500; }
+  .table-card li.fk { background: rgba(106,169,255,0.04); }
+  .table-card li.pk b::after {
+    content: " 🔑"; opacity: 0.7;
+  }
+  .table-card .foot {
+    padding: 8px 12px; border-top: 1px solid var(--line);
+    font-size: 11.5px; color: var(--dim);
+  }
+
+  /* ------ sync sequence diagram ------ */
+  .sync-flow {
+    display: grid; gap: 8px;
+    grid-template-columns: 110px 1fr 1fr 1fr 1fr;
+    font-size: 12.5px;
+    align-items: center;
+  }
+  .sync-flow .head {
+    text-align: center; color: var(--muted);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px;
+    padding: 8px 0; border-bottom: 1px dashed var(--line);
+  }
+  .sync-flow .step {
+    padding: 4px 0; color: var(--text);
+  }
+  .sync-flow .label {
+    color: var(--muted); padding: 4px 0; font-size: 12px;
+  }
+  .pipe {
+    text-align: center; color: var(--dim);
+  }
+  .pipe.active { color: var(--accent); }
+  .pipe.send::after { content: " ▶"; }
+  .pipe.recv::before { content: "◀ "; }
+
+  /* ------ docs ------ */
+  .docs-grid {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+  .doc-card {
+    border: 1px solid var(--line); border-radius: 12px;
+    background: var(--bg-2); padding: 14px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .doc-card a {
+    color: var(--accent); text-decoration: none; font-size: 13.5px; font-weight: 600;
+  }
+  .doc-card a:hover { text-decoration: underline; }
+  .doc-card .blurb { color: var(--muted); font-size: 12.5px; }
+  .doc-card .file { color: var(--dim); font-size: 11px; }
+
+  /* ------ collapsible ------ */
+  details { margin: 6px 0; }
+  details summary {
+    cursor: pointer; padding: 8px 12px; border-radius: 8px;
+    background: var(--bg-3); border: 1px solid var(--line);
+    font-size: 13px; font-weight: 500;
+    list-style: none;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before {
+    content: "▸"; display: inline-block; margin-right: 8px;
+    transition: transform .15s; color: var(--muted);
+  }
+  details[open] summary::before { transform: rotate(90deg); }
+  details .body { padding: 10px 12px; }
+
+  .two-col { display: grid; gap: 18px; grid-template-columns: 1fr 1fr; }
+  .three-col { display: grid; gap: 14px; grid-template-columns: 1fr 1fr 1fr; }
+
+  /* legend */
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+  .legend .item {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--muted); font-size: 12px;
+  }
+  .legend .sw {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+
+  /* responsive */
+  @media (max-width: 980px) {
+    .hero-grid { grid-template-columns: 1fr 1fr; }
+    .arch-grid { grid-template-columns: 1fr; }
+    .two-col, .three-col { grid-template-columns: 1fr; }
+    nav.toc { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="logo"></div>
+    <div>
+      Northern Blue
+      <div class="sub">Architecture Dashboard · plus-size women's clothing brand</div>
+    </div>
+  </div>
+  <nav class="toc">
+    <a href="#stack">Stack</a>
+    <a href="#arch">Architecture</a>
+    <a href="#routes">Routes</a>
+    <a href="#api">API</a>
+    <a href="#db">Database</a>
+    <a href="#sync">Sync flow</a>
+    <a href="#lib">Lib</a>
+    <a href="#docs">Docs</a>
+  </nav>
+  <div class="stat-pills">
+    <span class="pill"><b>Next.js 15</b></span>
+    <span class="pill"><b>MySQL 9</b></span>
+    <span class="pill"><b>Shopify</b></span>
+  </div>
+</header>
+
+<main>
+
+<!-- =========== HERO / KPI =========== -->
+<section id="stack">
+  <h1>System overview</h1>
+  <p class="muted">A single Next.js 15 app serves both the customer storefront and the admin panel. A local MySQL database acts as the read‑cache and extension layer; Shopify remains the source of truth for commerce data and stays in sync via webhooks.</p>
+
+  <div class="hero-grid" style="margin-top:18px">
+    <div class="card">
+      <div class="label muted" style="font-size:11.5px;letter-spacing:0.7px;text-transform:uppercase;">Stack</div>
+      <div class="stack-row" style="margin-top:8px">
+        <span class="chip">Next.js 15 · App Router</span>
+        <span class="chip">React 19</span>
+        <span class="chip">Turbopack</span>
+        <span class="chip alt">Tailwind 3</span>
+        <span class="chip alt2">MySQL 9 (Docker)</span>
+        <span class="chip alt2">mysql2</span>
+        <span class="chip alt3">Shopify Storefront API</span>
+        <span class="chip alt3">Shopify Admin API</span>
+        <span class="chip">JWT (httpOnly)</span>
+        <span class="chip">bcryptjs</span>
+        <span class="chip">Vitest + RTL</span>
+        <span class="chip">Recharts</span>
+        <span class="chip">react‑hot‑toast</span>
+      </div>
+      <div class="dim" style="margin-top:10px">
+        Single deployment. <code>middleware.js</code> protects <code>/admin/*</code>. No separate API server.
+      </div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Routes</div>
+      <div class="num">26</div>
+      <div class="foot">7 storefront · 14 admin · 5 API</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">DB tables</div>
+      <div class="num">12</div>
+      <div class="foot">7 Shopify · 4 ours · 1 derived</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Tests</div>
+      <div class="num">36</div>
+      <div class="foot">Vitest + Testing Library</div>
+    </div>
+  </div>
+</section>
+
+<!-- =========== ARCHITECTURE DIAGRAM =========== -->
+<section id="arch">
+  <h2>Architecture diagram</h2>
+  <p class="muted" style="margin-top:-4px">Where requests come from, who reads/writes what, and how data flows between layers.</p>
+
+  <div class="arch" style="margin-top:14px">
+    <div class="arch-grid">
+      <!-- col 1: clients -->
+      <div class="col-stack">
+        <div class="col-head">Clients</div>
+
+        <div class="node store">
+          <div class="ttl"><span class="dot"></span> Storefront (public)</div>
+          <div class="desc">Customer-facing SSR pages under <code>app/(storefront)/</code>.</div>
+          <ul>
+            <li><code>/</code> — Home (Hero, Collections, Contact)</li>
+            <li><code>/collections</code> · <code>/collections/[handle]</code></li>
+            <li><code>/products/[handle]</code></li>
+            <li><code>/cart</code> · <code>/size-guide</code></li>
+          </ul>
+        </div>
+
+        <div class="node admin">
+          <div class="ttl"><span class="dot"></span> Admin panel (/admin/*)</div>
+          <div class="desc">JWT-gated. Calls <code>/api/admin/*</code> client-side via <code>lib/shopify-admin.js</code>.</div>
+          <ul>
+            <li>Dashboard · Products · Orders · Inventory</li>
+            <li>Customers · Returns · Discounts</li>
+            <li>Suppliers · Settings</li>
+          </ul>
+        </div>
+
+        <div class="node shop">
+          <div class="ttl"><span class="dot"></span> Shopify (push webhooks)</div>
+          <div class="desc">Sends HMAC-signed events to our webhook endpoint.</div>
+          <ul>
+            <li><code>orders/create</code>, <code>orders/updated</code></li>
+            <li><code>customers/create</code>, <code>customers/update</code></li>
+            <li><code>inventory_levels/update</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- col 2: next.js -->
+      <div class="col-stack">
+        <div class="col-head">Next.js (single deployment)</div>
+
+        <div class="node api">
+          <div class="ttl"><span class="dot"></span> middleware.js</div>
+          <div class="desc">Redirects unauthenticated <code>/admin/*</code> requests to <code>/admin/login</code>.</div>
+        </div>
+
+        <div class="node api">
+          <div class="ttl"><span class="dot"></span> /api/auth/*</div>
+          <div class="desc">Login / logout / me. Issues JWT in <code>nb-admin-token</code> httpOnly cookie.</div>
+          <ul>
+            <li><code>POST /api/auth/login</code></li>
+            <li><code>POST /api/auth/logout</code></li>
+            <li><code>GET  /api/auth/me</code></li>
+          </ul>
+        </div>
+
+        <div class="node api">
+          <div class="ttl"><span class="dot"></span> /api/admin/[...path]</div>
+          <div class="desc">Catch-all admin proxy. Validates JWT, reads from MySQL, returns Shopify-shaped JSON.</div>
+          <ul>
+            <li><code>dashboard</code> · <code>revenue.json</code></li>
+            <li><code>products</code> · <code>orders</code> · <code>customers</code></li>
+            <li><code>returns</code> · <code>suppliers</code> · <code>discounts</code></li>
+            <li><code>inventory/levels</code> · <code>supplier-orders</code></li>
+            <li><code>settings</code></li>
+          </ul>
+        </div>
+
+        <div class="node api">
+          <div class="ttl"><span class="dot"></span> /api/webhooks/shopify</div>
+          <div class="desc">HMAC-verified webhook receiver. Dispatches by <code>X-Shopify-Topic</code> header to upsert helpers.</div>
+        </div>
+
+        <div class="node lib">
+          <div class="ttl"><span class="dot"></span> lib/* (server)</div>
+          <ul>
+            <li><code>db.js</code> — mysql2 pool + <code>$N→?</code> shim</li>
+            <li><code>auth.js</code> — JWT sign/verify + bcrypt</li>
+            <li><code>sync.js</code> — upsert helpers (orders / customers / inventory / discounts) + revenue derivation</li>
+            <li><code>shopify.js</code> — Storefront-shaped reads (DB now, GraphQL later)</li>
+            <li><code>cart.js</code> — local cart stubs (Shopify Cart API later)</li>
+            <li><code>shopify-admin.js</code> — client fetch wrapper</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- col 3: data -->
+      <div class="col-stack">
+        <div class="col-head">Data</div>
+
+        <div class="node db">
+          <div class="ttl"><span class="dot"></span> MySQL 9 (Docker, port 3306)</div>
+          <div class="desc">Cache + extensions. All reads hit DB (fast, no rate limits).</div>
+          <ul>
+            <li>Schema bootstraps on first <code>docker compose up</code></li>
+            <li><code>npm run db:seed</code> populates dev data</li>
+            <li><code>npm run db:sync</code> bulk-pulls from Shopify</li>
+            <li>JSON columns for <code>line_items</code>, <code>shipping_address</code>, <code>timeline</code>, <code>variants</code></li>
+          </ul>
+        </div>
+
+        <div class="node shop">
+          <div class="ttl"><span class="dot"></span> Shopify Backend</div>
+          <div class="desc">Source of truth for commerce. Handles checkout, payments, tax, shipping.</div>
+          <ul>
+            <li>Storefront API — products, cart, checkout (public token)</li>
+            <li>Admin API — orders, customers, inventory (private token)</li>
+            <li>Refunds API — called from <code>returns/refund</code></li>
+            <li>Price Rules API — polled for discounts (no webhook)</li>
+          </ul>
+        </div>
+
+        <div class="node store">
+          <div class="ttl"><span class="dot"></span> Browser</div>
+          <ul>
+            <li><code>localStorage[nb-cart]</code> — cart state (CartContext)</li>
+            <li><code>cookie[nb-admin-token]</code> — httpOnly admin JWT (7‑day)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="sw" style="background:var(--store)"></span>Storefront</span>
+      <span class="item"><span class="sw" style="background:var(--admin)"></span>Admin</span>
+      <span class="item"><span class="sw" style="background:var(--accent)"></span>API route</span>
+      <span class="item"><span class="sw" style="background:var(--db)"></span>MySQL</span>
+      <span class="item"><span class="sw" style="background:var(--shop)"></span>Shopify</span>
+      <span class="item"><span class="sw" style="background:#c0c8e8"></span>Lib (server)</span>
+    </div>
+  </div>
+</section>
+
+<!-- =========== ROUTES =========== -->
+<section id="routes">
+  <h2>Page route tree</h2>
+  <div class="three-col">
+    <div class="card">
+      <h3 style="margin-top:0">Storefront <span class="tag pub">public</span></h3>
+      <table>
+        <tbody>
+          <tr><td class="path"><code>/</code></td><td class="muted">Home — Hero · About · Collections · Contact</td></tr>
+          <tr><td class="path"><code>/collections</code></td><td class="muted">List of all collections (SSR)</td></tr>
+          <tr><td class="path"><code>/collections/[handle]</code></td><td class="muted">Products in a collection (SSR + metadata)</td></tr>
+          <tr><td class="path"><code>/products/[handle]</code></td><td class="muted">Detail · variant selector · add to cart</td></tr>
+          <tr><td class="path"><code>/cart</code></td><td class="muted">Full cart page</td></tr>
+          <tr><td class="path"><code>/size-guide</code></td><td class="muted">Static size chart</td></tr>
+        </tbody>
+      </table>
+      <div class="dim" style="margin-top:10px">Layout: <code>app/(storefront)/layout.jsx</code> — AnnouncementBar · Navbar · Footer · CartDrawer</div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Admin <span class="tag auth">JWT‑gated</span></h3>
+      <table>
+        <tbody>
+          <tr><td class="path"><code>/admin/login</code></td><td class="muted">Login form (only public admin route)</td></tr>
+          <tr><td class="path"><code>/admin</code></td><td class="muted">Dashboard · KPIs · revenue chart · low stock</td></tr>
+          <tr><td class="path"><code>/admin/products</code></td><td class="muted">List + search</td></tr>
+          <tr><td class="path"><code>/admin/products/new</code></td><td class="muted">Create form</td></tr>
+          <tr><td class="path"><code>/admin/products/[id]/edit</code></td><td class="muted">Edit form</td></tr>
+          <tr><td class="path"><code>/admin/orders</code></td><td class="muted">List + status filters · supplier badges</td></tr>
+          <tr><td class="path"><code>/admin/orders/[id]</code></td><td class="muted">Detail · timeline · fulfill · supplier orders</td></tr>
+          <tr><td class="path"><code>/admin/inventory</code></td><td class="muted">Stock with low‑stock highlighting</td></tr>
+          <tr><td class="path"><code>/admin/customers</code></td><td class="muted">List + search</td></tr>
+          <tr><td class="path"><code>/admin/customers/[id]</code></td><td class="muted">Detail + order history</td></tr>
+          <tr><td class="path"><code>/admin/returns</code></td><td class="muted">Request workflow</td></tr>
+          <tr><td class="path"><code>/admin/returns/[id]</code></td><td class="muted">Approve · decline · refund</td></tr>
+          <tr><td class="path"><code>/admin/discounts</code></td><td class="muted">List · active toggle</td></tr>
+          <tr><td class="path"><code>/admin/discounts/new</code></td><td class="muted">Create discount</td></tr>
+          <tr><td class="path"><code>/admin/discounts/[id]/edit</code></td><td class="muted">Edit discount</td></tr>
+          <tr><td class="path"><code>/admin/suppliers</code></td><td class="muted">CRUD list</td></tr>
+          <tr><td class="path"><code>/admin/suppliers/new</code></td><td class="muted">Create supplier</td></tr>
+          <tr><td class="path"><code>/admin/suppliers/[id]</code></td><td class="muted">Detail · supplier orders</td></tr>
+          <tr><td class="path"><code>/admin/settings</code></td><td class="muted">Store info · password change</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">API <span class="tag">server‑only</span></h3>
+      <table>
+        <tbody>
+          <tr><td class="path"><code>/api/auth/login</code></td><td class="muted"><span class="method POST">POST</span> Issues JWT cookie</td></tr>
+          <tr><td class="path"><code>/api/auth/logout</code></td><td class="muted"><span class="method POST">POST</span> Clears cookie</td></tr>
+          <tr><td class="path"><code>/api/auth/me</code></td><td class="muted"><span class="method GET">GET</span> Returns current admin</td></tr>
+          <tr><td class="path"><code>/api/admin/[...path]</code></td><td class="muted"><span class="method GET">GET</span><span class="method POST">POST</span><span class="method PUT">PUT</span> Catch‑all (see API table)</td></tr>
+          <tr><td class="path"><code>/api/webhooks/shopify</code></td><td class="muted"><span class="method POST">POST</span> HMAC‑verified webhook receiver</td></tr>
+        </tbody>
+      </table>
+      <div class="dim" style="margin-top:10px">Auth: <code>nb-admin-token</code> httpOnly cookie · JWT 7‑day · bcrypt hash via <code>ADMIN_PASSWORD_HASH</code></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========== API ENDPOINTS =========== -->
+<section id="api">
+  <h2>Admin API · /api/admin/[...path]</h2>
+  <p class="muted" style="margin-top:-4px">Single catch‑all handler. Every request validates the JWT cookie first, then reads from MySQL and returns Shopify-shaped JSON so admin components stay drop-in compatible with future real Shopify wiring.</p>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:60px">Method</th>
+          <th style="width:32%">Path</th>
+          <th>Purpose</th>
+          <th style="width:130px">Reads / Writes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>dashboard</code></td><td>Revenue this month, order count, total customers, AOV, total revenue</td><td><span class="tag">orders, customers, revenue</span></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>revenue.json</code></td><td>Daily revenue series for chart</td><td><span class="tag">revenue</span></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>products.json</code> · <code>products/{id}.json</code></td><td>List or fetch one — reshaped to Storefront API form</td><td><span class="tag">products</span></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>orders.json</code></td><td>List with per-order supplier rollup via <code>JSON_TABLE</code> + <code>JSON_ARRAYAGG</code></td><td><span class="tag">orders ⨝ products ⨝ suppliers</span></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>orders/{id}.json</code></td><td>Detail with line-item supplier annotation</td><td><span class="tag">orders ⨝ products ⨝ suppliers</span></td></tr>
+        <tr><td><span class="method POST">POST</span></td><td class="path"><code>orders/{id}/fulfillments.json</code></td><td>Stub fulfillment (Shopify call when wired)</td><td><span class="tag">stub</span></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>customers.json</code> · <code>customers/{id}.json</code></td><td>List or detail with full order history</td><td><span class="tag">customers, orders</span></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>inventory/levels.json</code></td><td>Stock by variant</td><td><span class="tag">inventory</span></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>discounts.json</code> · <code>discounts/{id}.json</code></td><td>List or detail</td><td><span class="tag">discounts</span></td></tr>
+        <tr><td><span class="method POST">POST</span></td><td class="path"><code>discounts.json</code></td><td>Create new discount</td><td><span class="tag">discounts</span></td></tr>
+        <tr><td><span class="method PUT">PUT</span></td><td class="path"><code>discounts/{id}/toggle.json</code></td><td>Toggle active flag</td><td><span class="tag">discounts</span></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>suppliers.json</code> · <code>suppliers/{id}.json</code></td><td>List or detail</td><td><span class="tag">suppliers</span></td></tr>
+        <tr><td><span class="method POST">POST</span></td><td class="path"><code>suppliers.json</code></td><td>Create supplier</td><td><span class="tag">suppliers</span></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>returns.json</code> · <code>returns/{id}.json</code></td><td>List or detail</td><td><span class="tag">returns</span></td></tr>
+        <tr><td><span class="method POST">POST</span></td><td class="path"><code>returns/{id}/{approve|decline|refund}.json</code></td><td>Workflow transitions; appends to JSON timeline; refund will call Shopify Refunds API</td><td><span class="tag">returns</span></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>supplier-orders.json</code></td><td>All forwarded supplier orders</td><td><span class="tag">supplier_orders</span></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>orders/{id}/supplier-orders.json</code></td><td>Forwarded SOs for one customer order</td><td><span class="tag">supplier_orders</span></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>suppliers/{id}/supplier-orders.json</code></td><td>Outstanding work for one supplier</td><td><span class="tag">supplier_orders</span></td></tr>
+        <tr><td><span class="method POST">POST</span></td><td class="path"><code>supplier-orders.json</code></td><td>Forward order to supplier; appends to order timeline</td><td><span class="tag">supplier_orders + orders</span></td></tr>
+        <tr><td><span class="method PUT">PUT</span></td><td class="path"><code>supplier-orders/{id}.json</code></td><td>Update tracking / status</td><td><span class="tag">supplier_orders</span></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>settings.json</code></td><td>Store info (key/value flattened)</td><td><span class="tag">settings</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:22px">Public endpoints</h3>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table>
+      <thead><tr><th style="width:60px">Method</th><th style="width:32%">Path</th><th>Purpose</th><th style="width:130px">Auth</th></tr></thead>
+      <tbody>
+        <tr><td><span class="method POST">POST</span></td><td class="path"><code>/api/auth/login</code></td><td>Validate creds, set JWT cookie</td><td><span class="tag pub">public</span></td></tr>
+        <tr><td><span class="method POST">POST</span></td><td class="path"><code>/api/auth/logout</code></td><td>Clear cookie</td><td><span class="tag pub">public</span></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td class="path"><code>/api/auth/me</code></td><td>Echo current admin from token</td><td><span class="tag auth">JWT</span></td></tr>
+        <tr><td><span class="method POST">POST</span></td><td class="path"><code>/api/webhooks/shopify</code></td><td>HMAC‑verified topic dispatch → upsert</td><td><span class="tag hmac">HMAC</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- =========== DATABASE =========== -->
+<section id="db">
+  <h2>Database schema · MySQL 9</h2>
+  <p class="muted" style="margin-top:-4px">Field names mirror the Shopify REST Admin API (2024‑10) where possible. Prices stored as <code>DECIMAL(10,2)</code>; mysql2 returns DECIMAL as string (matches the previous <code>NUMERIC</code> behaviour from Postgres). JSON columns hold variant-shaped Shopify payloads as-is.</p>
+
+  <div class="schema-grid" style="margin-top:14px">
+
+    <div class="table-card">
+      <div class="th">customers <span class="owner shopify">Shopify</span></div>
+      <ul>
+        <li class="pk"><b>id</b><span>VARCHAR(64)</span></li>
+        <li><b>email</b><span>UNIQUE</span></li>
+        <li><b>first_name</b> · <b>last_name</b><span>VARCHAR(128)</span></li>
+        <li><b>orders_count</b> · <b>total_spent</b><span>DECIMAL</span></li>
+        <li><b>last_order_id</b> · <b>last_order_name</b><span></span></li>
+        <li><b>state</b> · <b>tax_exempt</b> · <b>tags</b><span></span></li>
+        <li><b>city</b> · <b>province</b><span></span></li>
+      </ul>
+      <div class="foot">Synced via <code>customers/create</code> + <code>customers/update</code> webhooks.</div>
+    </div>
+
+    <div class="table-card">
+      <div class="th">orders <span class="owner shopify">Shopify</span></div>
+      <ul>
+        <li class="pk"><b>id</b><span>VARCHAR(64)</span></li>
+        <li><b>name</b> · <b>order_number</b><span></span></li>
+        <li class="fk"><b>customer_id</b><span>→ customers.id</span></li>
+        <li><b>line_items</b><span>JSON</span></li>
+        <li><b>shipping_address</b> · <b>billing_address</b><span>JSON</span></li>
+        <li><b>timeline</b><span>JSON (events)</span></li>
+        <li><b>subtotal_price</b> · <b>total_price</b> · <b>total_tax</b><span>DECIMAL</span></li>
+        <li><b>fulfillment_status</b> · <b>financial_status</b><span></span></li>
+      </ul>
+      <div class="foot">Synced via <code>orders/create</code>, <code>orders/updated</code>. Triggers <code>deriveRevenue</code> for the order's date.</div>
+    </div>
+
+    <div class="table-card">
+      <div class="th">fulfillments <span class="owner shopify">Shopify</span></div>
+      <ul>
+        <li class="pk"><b>id</b><span>VARCHAR(64)</span></li>
+        <li class="fk"><b>order_id</b><span>→ orders.id</span></li>
+        <li><b>status</b> · <b>shipment_status</b> · <b>service</b><span></span></li>
+        <li><b>tracking_number</b> · <b>tracking_company</b> · <b>tracking_url</b><span></span></li>
+        <li><b>tracking_numbers</b> · <b>tracking_urls</b><span>JSON</span></li>
+        <li><b>line_items</b><span>JSON</span></li>
+      </ul>
+      <div class="foot">Reserved for <code>fulfillments/*</code> webhooks (not yet wired).</div>
+    </div>
+
+    <div class="table-card">
+      <div class="th">products <span class="owner shopify">Shopify (cached)</span></div>
+      <ul>
+        <li class="pk"><b>id</b><span>VARCHAR(64)</span></li>
+        <li><b>handle</b><span>UNIQUE</span></li>
+        <li><b>title</b> · <b>description</b> · <b>vendor</b><span></span></li>
+        <li class="fk"><b>collection_handle</b><span>→ collections.handle</span></li>
+        <li class="fk"><b>supplier_id</b><span>→ suppliers.id (ours)</span></li>
+        <li><b>price_min</b><span>DECIMAL</span></li>
+        <li><b>images</b> · <b>options</b> · <b>variants</b><span>JSON</span></li>
+      </ul>
+      <div class="foot"><code>supplier_id</code> is our extension — not in Shopify.</div>
+    </div>
+
+    <div class="table-card">
+      <div class="th">collections <span class="owner shopify">Shopify (cached)</span></div>
+      <ul>
+        <li class="pk"><b>id</b><span>VARCHAR(64)</span></li>
+        <li><b>handle</b><span>UNIQUE</span></li>
+        <li><b>title</b> · <b>description</b> · <b>image</b><span></span></li>
+      </ul>
+      <div class="foot">Spring Collection · Everyday Essentials · Workwear Edit · Weekend Casual.</div>
+    </div>
+
+    <div class="table-card">
+      <div class="th">inventory <span class="owner shopify">Shopify</span></div>
+      <ul>
+        <li class="pk"><b>id</b><span>VARCHAR(64)</span></li>
+        <li><b>inventory_item_id</b><span></span></li>
+        <li><b>location_id</b><span>default 'primary'</span></li>
+        <li><b>product_title</b> · <b>variant_title</b><span></span></li>
+        <li><b>available</b><span>INT</span></li>
+      </ul>
+      <div class="foot">Synced via <code>inventory_levels/update</code> webhook.</div>
+    </div>
+
+    <div class="table-card">
+      <div class="th">discounts <span class="owner shopify">Shopify (poll)</span></div>
+      <ul>
+        <li class="pk"><b>id</b><span>VARCHAR(64)</span></li>
+        <li><b>code</b><span>UNIQUE</span></li>
+        <li><b>type</b><span>percentage / fixed_amount / free_shipping</span></li>
+        <li><b>value</b> · <b>min_order_amount</b><span>DECIMAL</span></li>
+        <li><b>usage_limit</b> · <b>usage_count</b><span></span></li>
+        <li><b>starts_at</b> · <b>expires_at</b><span>DATE</span></li>
+      </ul>
+      <div class="foot">No webhook available — sync via Price Rules API poll or admin create.</div>
+    </div>
+
+    <div class="table-card">
+      <div class="th">revenue <span class="owner derived">Derived</span></div>
+      <ul>
+        <li class="pk"><b>date</b><span>DATE</span></li>
+        <li><b>amount</b><span>DECIMAL(10,2)</span></li>
+      </ul>
+      <div class="foot">Recalculated from <code>orders</code> in <code>deriveRevenue(date)</code> on every order webhook.</div>
+    </div>
+
+    <div class="table-card">
+      <div class="th">suppliers <span class="owner ours">Ours</span></div>
+      <ul>
+        <li class="pk"><b>id</b><span>VARCHAR(64)</span></li>
+        <li><b>name</b> · <b>contact_name</b> · <b>contact_email</b><span></span></li>
+        <li><b>country</b> · <b>lead_time_days</b><span></span></li>
+        <li><b>integration_type</b><span>manual / email / api / shopify_collective</span></li>
+        <li><b>api_endpoint</b> · <b>api_key</b><span></span></li>
+        <li><b>active</b> · <b>product_count</b><span></span></li>
+      </ul>
+      <div class="foot">No Shopify equivalent. We own this entirely.</div>
+    </div>
+
+    <div class="table-card">
+      <div class="th">supplier_orders <span class="owner ours">Ours</span></div>
+      <ul>
+        <li class="pk"><b>id</b><span>VARCHAR(64)</span></li>
+        <li class="fk"><b>order_id</b><span>→ orders.id</span></li>
+        <li class="fk"><b>supplier_id</b><span>→ suppliers.id</span></li>
+        <li><b>items</b> · <b>shipping_address</b><span>JSON</span></li>
+        <li><b>status</b><span>pending / sent / shipped</span></li>
+        <li><b>reference</b><span>NB‑{order#}‑{SUPPLIER}</span></li>
+        <li><b>tracking_number</b> · <b>tracking_company</b><span></span></li>
+      </ul>
+      <div class="foot">Internal PO tracking. Created from admin "Forward to supplier" action.</div>
+    </div>
+
+    <div class="table-card">
+      <div class="th">returns <span class="owner ours">Ours</span></div>
+      <ul>
+        <li class="pk"><b>id</b><span>VARCHAR(64)</span></li>
+        <li class="fk"><b>order_id</b><span>→ orders.id</span></li>
+        <li class="fk"><b>customer_id</b><span>→ customers.id</span></li>
+        <li><b>reason</b> · <b>items</b><span>JSON</span></li>
+        <li><b>refund_amount</b><span>DECIMAL</span></li>
+        <li><b>status</b><span>requested → approved/declined → refunded</span></li>
+        <li><b>timeline</b><span>JSON (events)</span></li>
+      </ul>
+      <div class="foot">Local workflow. <code>refund</code> action will hit Shopify Refunds API.</div>
+    </div>
+
+    <div class="table-card">
+      <div class="th">settings <span class="owner ours">Ours</span></div>
+      <ul>
+        <li class="pk"><b>key</b><span>VARCHAR(64)</span></li>
+        <li><b>value</b><span>TEXT</span></li>
+      </ul>
+      <div class="foot">Seeded with store_name · email · currency · timezone · country.</div>
+    </div>
+
+  </div>
+
+  <h3 style="margin-top:22px">Foreign-key map</h3>
+  <pre class="card" style="margin:0; padding:14px; font-size:12.5px; color: var(--muted); white-space:pre; overflow-x:auto;">
+customers ──────────┐
+                    │
+                    ▼
+              orders ◀──────── returns
+                    │
+                    │  (via line_items.product_id JSON_TABLE join)
+                    ▼
+products ────────► suppliers
+                    │
+                    ▼
+              supplier_orders ──► orders</pre>
+</section>
+
+<!-- =========== SYNC FLOW =========== -->
+<section id="sync">
+  <h2>Sync architecture</h2>
+  <p class="muted" style="margin-top:-4px">Shopify is the source of truth. The DB is a cache + extension layer. Reads always hit the DB (fast, no rate limits); writes go to Shopify first then update the DB to match.</p>
+
+  <div class="two-col" style="margin-top:14px">
+
+    <div class="card">
+      <h3 style="margin-top:0">Webhook flow (live)</h3>
+      <div class="sync-flow">
+        <div></div>
+        <div class="head">Shopify</div>
+        <div class="head">/api/webhooks/shopify</div>
+        <div class="head">lib/sync.js</div>
+        <div class="head">MySQL</div>
+
+        <div class="label">order placed</div>
+        <div class="step">orders/create</div>
+        <div class="pipe send"></div>
+        <div class="step muted">verify HMAC</div>
+        <div class="pipe">·</div>
+
+        <div class="label">dispatch</div>
+        <div></div>
+        <div class="step muted">switch(topic)</div>
+        <div class="step">syncOrder(payload)</div>
+        <div class="pipe send"></div>
+
+        <div class="label">upsert</div>
+        <div></div>
+        <div></div>
+        <div class="step muted">ON DUPLICATE KEY UPDATE</div>
+        <div class="step">orders, customers</div>
+
+        <div class="label">derive</div>
+        <div></div>
+        <div></div>
+        <div class="step muted">deriveRevenue(date)</div>
+        <div class="step">revenue</div>
+
+        <div class="label">ack</div>
+        <div class="step">200 OK</div>
+        <div class="pipe recv"></div>
+        <div></div>
+        <div></div>
+      </div>
+      <div class="dim" style="margin-top:14px">
+        Always returns 200 even on errors — a 5xx triggers Shopify retry and risks duplicate processing. Errors are logged but swallowed.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Bulk sync (boot / on demand)</h3>
+      <pre class="mono" style="margin:0; color: var(--muted); white-space:pre-wrap;">
+# All tables
+npm run db:sync
+
+# Single table
+npm run db:sync -- orders
+npm run db:sync -- customers
+npm run db:sync -- inventory
+npm run db:sync -- discounts</pre>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--muted)">
+        <code>db/sync.js</code> calls the Shopify Admin REST API (2024‑10), paginates, and feeds rows through the same upsert helpers in <code>lib/sync.js</code>. Idempotent — safe to re-run.
+      </div>
+
+      <h3>Read / write contract</h3>
+      <table>
+        <tbody>
+          <tr><td><b>Reads</b></td><td class="muted">Always hit MySQL. Never rate‑limited. <code>lib/shopify.js</code> reshapes rows into the Shopify Storefront API form so storefront components don't change when real Shopify is wired.</td></tr>
+          <tr><td><b>Writes</b></td><td class="muted">Shopify first → then update DB. Webhook arrives moments later and overwrites with authoritative state.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Wiring up Shopify (3 file swaps)</h3>
+      <ol style="padding-left: 18px; color: var(--muted); font-size: 12.5px;">
+        <li><code>lib/shopify.js</code> — uncomment GraphQL client, swap DB queries for Storefront API calls.</li>
+        <li><code>lib/cart.js</code> — replace localStorage stubs with Shopify Cart API mutations.</li>
+        <li><code>lib/sync.js</code> + <code>db/sync.js</code> — already wired; just set <code>SHOPIFY_ADMIN_API_TOKEN</code> and run <code>npm run db:sync</code>.</li>
+      </ol>
+    </div>
+
+  </div>
+</section>
+
+<!-- =========== LIB / COMPONENTS =========== -->
+<section id="lib">
+  <h2>Modules &amp; components</h2>
+
+  <div class="three-col">
+
+    <div class="card">
+      <h3 style="margin-top:0">lib/ <span class="dim">— server</span></h3>
+      <table>
+        <tbody>
+          <tr><td><code>db.js</code></td><td class="muted">mysql2 pool · pg-style <code>$N → ?</code> shim (single-use); returns <code>{rows}</code> for drop-in compatibility</td></tr>
+          <tr><td><code>auth.js</code></td><td class="muted"><code>checkCredentials</code> · <code>signToken</code> · <code>verifyToken</code>; bcrypt; 7-day JWT</td></tr>
+          <tr><td><code>sync.js</code></td><td class="muted">Upsert: <code>syncOrder</code>, <code>syncCustomer</code>, <code>syncInventoryLevel</code>, <code>syncDiscount</code>; <code>deriveRevenue</code></td></tr>
+          <tr><td><code>shopify.js</code></td><td class="muted">Storefront-shaped reads: <code>getCollections</code> · <code>getCollectionByHandle</code> · <code>getProductByHandle</code> · <code>getProductsByCollection</code></td></tr>
+          <tr><td><code>shopify-admin.js</code></td><td class="muted">Client fetch wrapper for the admin panel; sends cookies; throws on non-2xx</td></tr>
+          <tr><td><code>cart.js</code></td><td class="muted">In-memory cart stubs in Shopify Cart API shape: <code>stubCreateCart</code>, <code>stubAddLine</code>, <code>stubUpdateLine</code>, <code>stubRemoveLine</code></td></tr>
+          <tr><td><code>formatCurrency.js</code></td><td class="muted">CAD-aware currency formatter</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">storefront/ <span class="dim">— customer UI</span></h3>
+      <ul style="margin:0; padding-left:18px; color: var(--muted); font-size: 13px;">
+        <li><code>ProductCard</code> · <code>ProductGallery</code> · <code>ProductVariantSelector</code></li>
+        <li><code>AddToCartButton</code> · <code>CartDrawer</code> · <code>CartLineItem</code> · <code>CartSummary</code></li>
+        <li><code>CollectionHeader</code> · <code>PriceDisplay</code> · <code>SizeGuideTable</code></li>
+      </ul>
+
+      <h3>components/ <span class="dim">— shared</span></h3>
+      <ul style="margin:0; padding-left:18px; color: var(--muted); font-size: 13px;">
+        <li><code>Navbar</code> · <code>Footer</code> · <code>AnnouncementBar</code></li>
+        <li><code>Hero</code> · <code>About</code> · <code>Collections</code> · <code>ContactForm</code></li>
+        <li><code>ButterflyLogo</code></li>
+      </ul>
+
+      <h3>context/ &amp; hooks/</h3>
+      <ul style="margin:0; padding-left:18px; color: var(--muted); font-size: 13px;">
+        <li><code>CartContext</code> — cart state · <code>localStorage[nb-cart]</code> · auto-open on add</li>
+        <li><code>useCart</code> · <code>useFadeIn</code></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">admin/components/</h3>
+      <ul style="margin:0; padding-left:18px; color: var(--muted); font-size: 13px;">
+        <li><code>AdminSidebar</code> · <code>AdminHeader</code></li>
+        <li><code>DataTable</code> · <code>StatsCard</code> · <code>StatusBadge</code></li>
+        <li><code>RevenueChart</code> <span class="dim">(Recharts)</span></li>
+        <li><code>LowStockAlert</code> · <code>OrderTimeline</code></li>
+      </ul>
+
+      <h3>db/</h3>
+      <ul style="margin:0; padding-left:18px; color: var(--muted); font-size: 13px;">
+        <li><code>schema.sql</code> — auto-runs on first <code>docker compose up</code></li>
+        <li><code>seed.js</code> — dev data for all tables, idempotent</li>
+        <li><code>sync.js</code> — bulk sync CLI from Shopify Admin API</li>
+      </ul>
+
+      <h3>tests/ <span class="dim">— Vitest + RTL</span></h3>
+      <ul style="margin:0; padding-left:18px; color: var(--muted); font-size: 13px;">
+        <li>About · AnnouncementBar · ButterflyLogo · Collections</li>
+        <li>ContactForm · Footer · Hero · Navbar · App</li>
+        <li><code>useFadeIn</code></li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- =========== ENV / OPS =========== -->
+<section id="ops">
+  <h2>Operations</h2>
+  <div class="two-col">
+    <div class="card">
+      <h3 style="margin-top:0">Environment variables</h3>
+      <table>
+        <tbody>
+          <tr><td><code>DATABASE_URL</code></td><td class="muted">mysql://northern_blue:northern_blue@localhost:3306/northern_blue</td></tr>
+          <tr><td><code>ADMIN_JWT_SECRET</code></td><td class="muted">≥32 chars; required in prod</td></tr>
+          <tr><td><code>ADMIN_USERNAME</code></td><td class="muted">defaults to <code>admin</code></td></tr>
+          <tr><td><code>ADMIN_PASSWORD_HASH</code></td><td class="muted">bcrypt; dev fallback is <code>admin/admin123</code></td></tr>
+          <tr><td><code>NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN</code></td><td class="muted">e.g. your-store.myshopify.com</td></tr>
+          <tr><td><code>NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN</code></td><td class="muted">public token (client + server)</td></tr>
+          <tr><td><code>SHOPIFY_ADMIN_API_TOKEN</code></td><td class="muted">private; server only</td></tr>
+          <tr><td><code>SHOPIFY_WEBHOOK_SECRET</code></td><td class="muted">HMAC verification; bypassed if unset (dev)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Commands</h3>
+      <pre class="mono" style="margin:0; color:#cfdcff; white-space:pre-wrap;">
+docker compose up -d        # start MySQL on :3306
+docker compose down         # stop (data persists in volume)
+docker compose down -v      # stop + wipe data
+
+npm install
+npm run dev                 # Next.js dev (Turbopack)
+npm run build               # production build
+npm run start               # production server
+
+npm test                    # Vitest watch
+npm run test:run            # Vitest run
+
+npm run db:seed             # seed dev data (idempotent)
+npm run db:sync             # bulk pull from Shopify Admin API
+npm run db:sync -- orders   # one table at a time</pre>
+      <div class="dim" style="margin-top:10px">
+        First-time setup: <code>docker compose up -d &amp;&amp; npm run db:seed &amp;&amp; npm run dev</code>. Login at <code>/admin/login</code> with <code>admin / admin123</code>.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========== DOCS =========== -->
+<section id="docs">
+  <h2>Design docs</h2>
+  <p class="muted" style="margin-top:-4px">In-repo planning notes. Open in your editor for full context.</p>
+
+  <div class="docs-grid" style="margin-top:14px">
+    <div class="doc-card">
+      <a href="db-cache-plan.md">Database cache architecture</a>
+      <div class="blurb">Why MySQL is a cache layer in front of Shopify, table ownership, schema alignment with Shopify REST 2024‑10, MySQL-specific patterns (upsert, JSON_MERGE_PRESERVE, JSON_TABLE), and the read/write contract.</div>
+      <div class="file">docs/db-cache-plan.md</div>
+    </div>
+    <div class="doc-card">
+      <a href="ecommerce-integration-plan.md">E‑commerce integration plan</a>
+      <div class="blurb">High-level architecture (Next.js single deployment proxying both Shopify APIs), folder structure progress, and the migration from Vite SPA to Next.js 15 App Router.</div>
+      <div class="file">docs/ecommerce-integration-plan.md</div>
+    </div>
+    <div class="doc-card">
+      <a href="supplier-integration-plan.md">Supplier integration plan</a>
+      <div class="blurb">Four ways to forward orders to dropship suppliers (Shopify Collective, Fulfillment Service API, order webhooks, manual). Recommended path for Northern Blue and the supplier/PO data model.</div>
+      <div class="file">docs/supplier-integration-plan.md</div>
+    </div>
+    <div class="doc-card">
+      <a href="phase-3-plan.md">Phase 3 plan</a>
+      <div class="blurb">Roadmap for the discounts, returns, and suppliers admin features that are now built.</div>
+      <div class="file">docs/phase-3-plan.md</div>
+    </div>
+    <div class="doc-card">
+      <a href="nextjs-proposal.md">Next.js migration proposal</a>
+      <div class="blurb">Original case for moving the Vite + React SPA to Next.js — SSR, file-routing, single-deployment API routes.</div>
+      <div class="file">docs/nextjs-proposal.md</div>
+    </div>
+    <div class="doc-card">
+      <a href="plans/">Plans folder</a>
+      <div class="blurb">Dated design notes for landing page enhancements, Northern Blue Plus, taglines &amp; vision.</div>
+      <div class="file">docs/plans/*</div>
+    </div>
+  </div>
+</section>
+
+<footer style="text-align:center; color:var(--dim); font-size:11.5px; padding-top:24px; border-top:1px solid var(--line);">
+  Generated from <code>app/</code>, <code>lib/</code>, <code>db/schema.sql</code>, and <code>docs/*</code> · open this file directly in your browser
+</footer>
+
+</main>
+
+<script>
+  // Smooth-scroll TOC links + persist last section in URL hash
+  document.querySelectorAll('nav.toc a').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const id = a.getAttribute('href').slice(1);
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', '#' + id);
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
