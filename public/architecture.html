@@ -585,15 +585,14 @@
     margin-top: 14px;
   }
   .tests-toolbar {
-    display: flex; align-items: center; gap: 14px;
+    display: flex; align-items: center; gap: 10px;
     padding: 14px 18px;
     border-bottom: 1px solid var(--line);
     background: linear-gradient(90deg, rgba(106,169,255,0.04), transparent 50%);
     flex-wrap: wrap;
   }
-  .tests-toolbar .lead {
-    display: flex; align-items: center; gap: 10px; flex: 1;
-  }
+  .tests-toolbar .lead { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+
   .run-btn {
     display: flex; align-items: center; gap: 7px;
     padding: 7px 16px; border-radius: 8px;
@@ -612,72 +611,104 @@
   .run-btn.running .run-icon { display: none; }
   @keyframes spin-fast { to { transform: rotate(360deg); } }
 
-  .tests-summary {
-    font-size: 13px;
+  .toggle-btn {
+    padding: 5px 11px; border-radius: 7px;
+    background: var(--pill); color: var(--muted);
+    border: 1px solid var(--line); font-size: 12px; cursor: pointer;
+    transition: all .12s ease; white-space: nowrap;
   }
+  .toggle-btn:hover { color: var(--text); border-color: var(--line-2); }
+
+  .tests-summary { font-size: 13px; }
   .tests-summary .pass { color: var(--ok);   font-weight: 600; }
   .tests-summary .fail { color: var(--warn); font-weight: 600; }
   .tests-summary .dim  { color: var(--dim);  font-size: 12px; }
 
   .tests-body {
-    padding: 10px 8px;
-    max-height: 70vh; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 4px;
+    padding: 8px;
+    max-height: 75vh; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 6px;
   }
+
+  /* Suite card — JS accordion (data-open attr), no <details> */
   .suite-card {
     border: 1px solid var(--line);
     border-radius: 10px;
     overflow: hidden;
+    transition: border-color .12s;
   }
-  .suite-card summary {
-    list-style: none; cursor: pointer;
+  .suite-card.failed { border-color: rgba(255,138,161,0.35); }
+  .suite-header {
     display: flex; align-items: center; gap: 10px;
-    min-height: 38px;
-    padding: 9px 12px;
+    padding: 10px 14px;
     background: var(--bg-3);
-    font-size: 13px; font-weight: 500; line-height: 1.35;
-    user-select: none;
+    cursor: pointer; user-select: none;
+    transition: background .1s;
   }
-  .suite-card summary:hover { background: var(--pill); }
-  .suite-card summary::-webkit-details-marker { display: none; }
-  .suite-card summary::before { content: none; display: none; }
-  .suite-card summary .suite-arrow {
-    color: var(--dim); font-size: 10px;
-    transition: transform .14s ease; flex-shrink: 0;
+  .suite-header:hover { background: var(--pill); }
+  .suite-chevron {
+    flex-shrink: 0; width: 16px; height: 16px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 10px;
+    transition: transform .14s ease;
   }
-  .suite-card[open] summary .suite-arrow { transform: rotate(90deg); }
-  .suite-card .suite-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .suite-card .suite-count { font-size: 11.5px; color: var(--muted); flex-shrink: 0; }
-  .suite-card .suite-dot {
-    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-  }
-  .suite-card.passed .suite-dot { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .suite-card[data-open="true"] .suite-chevron { transform: rotate(90deg); }
+  .suite-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .suite-card.passed .suite-dot { background: var(--ok);   box-shadow: 0 0 8px var(--ok); }
   .suite-card.failed .suite-dot { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+  .suite-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); }
+  .suite-meta {
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  .suite-count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .suite-dur   { font-size: 11.5px; color: var(--dim); font-variant-numeric: tabular-nums; }
 
   .test-list {
-    padding: 4px 0; border-top: 1px solid var(--line);
+    display: none;
+    border-top: 1px solid var(--line);
+    padding-bottom: 4px;
   }
+  .suite-card[data-open="true"] .test-list { display: block; }
+
+  /* Describe-block grouping inside a suite */
+  .describe-group { margin: 0; }
+  .describe-header {
+    padding: 8px 14px 3px;
+    font-size: 11.5px; font-weight: 600;
+    color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px;
+    border-top: 1px dashed rgba(255,255,255,0.04);
+    margin-top: 4px;
+  }
+  .describe-group:first-child .describe-header { border-top: none; margin-top: 0; }
+
   .test-row {
-    display: flex; align-items: flex-start; gap: 8px;
-    padding: 5px 14px 5px 12px;
-    font-size: 12.5px; color: var(--muted);
+    display: grid;
+    grid-template-columns: 20px 1fr auto;
+    align-items: baseline;
+    gap: 6px;
+    padding: 5px 14px 5px 14px;
+    font-size: 13px;
+    transition: background .08s;
   }
-  .test-row:hover { background: rgba(255,255,255,0.015); }
-  .test-row .icon { flex-shrink: 0; margin-top: 1px; font-size: 13px; line-height: 1; }
-  .test-row.passed .icon { color: var(--ok); }
-  .test-row.failed .icon { color: var(--warn); }
-  .test-row .test-name { flex: 1; line-height: 1.45; }
-  .test-row .test-name .ancestor { color: var(--dim); }
-  .test-row .dur { flex-shrink: 0; color: var(--dim); font-size: 11px; font-variant-numeric: tabular-nums; }
-  .test-row .failure {
-    display: block; margin-top: 4px;
-    background: rgba(255,138,161,0.08); border: 1px solid rgba(255,138,161,0.2);
-    border-radius: 6px; padding: 6px 8px;
-    color: var(--warn); font-size: 11.5px; font-family: ui-monospace, monospace;
-    white-space: pre-wrap; word-break: break-word;
+  .test-row:hover { background: rgba(255,255,255,0.02); }
+  .test-icon { text-align: center; font-size: 13px; line-height: 1.5; }
+  .test-row.passed .test-icon { color: var(--ok); }
+  .test-row.failed .test-icon { color: var(--warn); }
+  .test-title { color: var(--text); line-height: 1.5; }
+  .test-dur   { color: var(--dim); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .test-failure {
+    grid-column: 2 / -1;
+    margin-top: 2px; margin-bottom: 4px;
+    background: rgba(255,138,161,0.07);
+    border: 1px solid rgba(255,138,161,0.22);
+    border-radius: 6px; padding: 8px 10px;
+    color: #ffc0c0; font-size: 12px;
+    font-family: ui-monospace, "JetBrains Mono", Menlo, monospace;
+    white-space: pre-wrap; word-break: break-all;
+    line-height: 1.5;
   }
   .tests-empty {
-    padding: 24px; text-align: center; color: var(--dim); font-size: 13px;
+    padding: 28px; text-align: center; color: var(--dim); font-size: 13px;
   }
 
   /* responsive */
@@ -1438,6 +1469,8 @@ npm run db:sync -- orders   # one table at a time</pre>
           <div class="tests-summary" id="tests-summary"><span class="dim">No results yet — click Run</span></div>
         </div>
       </div>
+      <button class="toggle-btn" id="expand-all-btn" type="button" style="display:none">Expand all</button>
+      <button class="toggle-btn" id="collapse-all-btn" type="button" style="display:none">Collapse all</button>
       <span class="ts" id="tests-ran-at"></span>
       <button class="run-btn" id="run-tests-btn" type="button">
         <span class="run-icon">▶ Run tests</span>
@@ -1446,7 +1479,7 @@ npm run db:sync -- orders   # one table at a time</pre>
       </button>
     </div>
     <div class="tests-body" id="tests-body">
-      <div class="tests-empty" id="tests-empty">Click <strong>Run tests</strong> to execute the suite and see results here.</div>
+      <div class="tests-empty">Click <strong>Run tests</strong> to execute the suite and see results here.</div>
     </div>
   </div>
 </section>
@@ -2255,93 +2288,159 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleAr
    5.  Test runner
    ───────────────────────────────────────────── */
 
-const runBtn      = document.getElementById('run-tests-btn')
-const runLabel    = document.querySelector('.run-label')
-const testsBody   = document.getElementById('tests-body')
-const testsEmpty  = document.getElementById('tests-empty')
+const runBtn       = document.getElementById('run-tests-btn')
+const runLabel     = document.querySelector('.run-label')
+const testsBody    = document.getElementById('tests-body')
 const testsSummary = document.getElementById('tests-summary')
-const testsRanAt  = document.getElementById('tests-ran-at')
+const testsRanAt   = document.getElementById('tests-ran-at')
+const expandAllBtn  = document.getElementById('expand-all-btn')
+const collapseAllBtn = document.getElementById('collapse-all-btn')
 
 function shortPath(full) {
-  // vitest v3 uses suite.name; strip absolute prefix down to tests/<filename>
   if (!full) return '(unknown)'
   return String(full).replace(/.*[/\\]tests[/\\]/, 'tests/')
 }
-
 function fmt(ms) {
   if (ms == null) return ''
-  return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms/1000).toFixed(1)}s`
+  if (ms < 1)    return '<1ms'
+  if (ms < 1000) return `${Math.round(ms)}ms`
+  return `${(ms/1000).toFixed(2)}s`
 }
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
+function escapeHtml(v) {
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
 
 function renderTestResults(result) {
   if (!result) return
+
   if (result.error) {
     testsBody.innerHTML = `<div class="tests-empty" style="color:var(--warn)">${escapeHtml(result.error)}<br><small class="dim">${escapeHtml(result.stderr || '')}</small></div>`
     testsSummary.innerHTML = `<span class="fail">Error</span>`
+    expandAllBtn.style.display  = 'none'
+    collapseAllBtn.style.display = 'none'
     return
   }
 
-  const total  = result.numTotalTests  || 0
-  const passed = result.numPassedTests || 0
-  const failed = result.numFailedTests || 0
-  const testFiles = result.numTotalTestFiles || (result.testResults || []).length || 0
+  const total    = result.numTotalTests  || 0
+  const passed   = result.numPassedTests || 0
+  const failed   = result.numFailedTests || 0
+  const files    = (result.testResults || []).length
 
   testsSummary.innerHTML =
     `<span class="pass">${passed} passed</span>` +
     (failed ? ` · <span class="fail">${failed} failed</span>` : '') +
-    ` · <span class="dim">${total} total · ${testFiles} files</span>`
+    ` · <span class="dim">${total} total · ${files} files</span>`
 
   if (result.ranAt) {
-    const d = new Date(result.ranAt)
-    testsRanAt.textContent = `Last run ${d.toLocaleTimeString()}`
+    testsRanAt.textContent = `Last run ${new Date(result.ranAt).toLocaleTimeString()}`
   }
 
-  const suiteEls = (result.testResults || [])
+  expandAllBtn.style.display  = 'inline-block'
+  collapseAllBtn.style.display = 'inline-block'
+
+  const suites = (result.testResults || [])
     .slice()
     .sort((a, b) => shortPath(a.name).localeCompare(shortPath(b.name)))
-    .map(suite => {
-      const assertions = suite.assertionResults || []
-      const suitePassed = assertions.filter(t => t.status === 'passed').length
-      const suiteFailed = assertions.filter(t => t.status === 'failed').length
-      const suiteClass  = suiteFailed > 0 ? 'failed' : 'passed'
-      const duration    = suite.endTime && suite.startTime ? fmt(suite.endTime - suite.startTime) : ''
 
-      const testRows = assertions.map(t => {
-        const ancestors = t.ancestorTitles?.length ? `<span class="ancestor">${escapeHtml(t.ancestorTitles.join(' › '))} › </span>` : ''
-        const failMsg   = t.failureMessages?.length
-          ? `<span class="failure">${escapeHtml(t.failureMessages[0]).slice(0, 400)}</span>`
-          : ''
-        return `
-          <div class="test-row ${t.status}">
-            <span class="icon">${t.status === 'passed' ? '✓' : '✗'}</span>
-            <span class="test-name">${ancestors}${escapeHtml(t.title)}${failMsg}</span>
-            <span class="dur">${fmt(t.duration)}</span>
-          </div>`
-      }).join('')
+  // Build DOM nodes (not HTML strings) for correct event binding
+  testsBody.innerHTML = ''
 
-      return `
-        <details class="suite-card ${suiteClass}" ${suiteFailed > 0 ? 'open' : ''}>
-          <summary>
-            <span class="suite-arrow">▶</span>
-            <span class="suite-dot"></span>
-            <span class="suite-name">${escapeHtml(shortPath(suite.name))}</span>
-            <span class="suite-count">${suitePassed}/${assertions.length}${duration ? ' · ' + duration : ''}</span>
-          </summary>
-          <div class="test-list">${testRows}</div>
-        </details>`
-    }).join('')
+  suites.forEach(suite => {
+    const assertions = suite.assertionResults || []
+    const nPassed    = assertions.filter(t => t.status === 'passed').length
+    const nFailed    = assertions.filter(t => t.status === 'failed').length
+    const cls        = nFailed > 0 ? 'failed' : 'passed'
+    const dur        = suite.endTime && suite.startTime ? fmt(suite.endTime - suite.startTime) : ''
 
-  testsBody.innerHTML = suiteEls || `<div class="tests-empty">No test results found in output.</div>`
+    // Group tests by their describe block(s)
+    const groups = new Map()
+    assertions.forEach(t => {
+      const key = (t.ancestorTitles || []).join(' › ') || ''
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key).push(t)
+    })
+
+    // Suite card
+    const card = document.createElement('div')
+    card.className = `suite-card ${cls}`
+    card.dataset.open = 'true'   // all open by default
+
+    // Clickable header
+    const header = document.createElement('div')
+    header.className = 'suite-header'
+    header.innerHTML = `
+      <span class="suite-chevron">▶</span>
+      <span class="suite-dot"></span>
+      <span class="suite-name">${escapeHtml(shortPath(suite.name))}</span>
+      <span class="suite-meta">
+        <span class="suite-count">${nPassed}/${assertions.length}</span>
+        ${dur ? `<span class="suite-dur">${dur}</span>` : ''}
+      </span>`
+    header.addEventListener('click', () => {
+      card.dataset.open = card.dataset.open === 'true' ? 'false' : 'true'
+    })
+
+    // Test list with describe groups
+    const list = document.createElement('div')
+    list.className = 'test-list'
+
+    groups.forEach((tests, groupKey) => {
+      const group = document.createElement('div')
+      group.className = 'describe-group'
+
+      if (groupKey) {
+        const dh = document.createElement('div')
+        dh.className = 'describe-header'
+        dh.textContent = groupKey
+        group.appendChild(dh)
+      }
+
+      tests.forEach(t => {
+        const row = document.createElement('div')
+        row.className = `test-row ${t.status}`
+        row.innerHTML = `
+          <span class="test-icon">${t.status === 'passed' ? '✓' : '✗'}</span>
+          <span class="test-title">${escapeHtml(t.title)}</span>
+          <span class="test-dur">${fmt(t.duration)}</span>`
+
+        if (t.failureMessages?.length) {
+          const msg = document.createElement('div')
+          msg.className = 'test-failure'
+          // Strip ANSI codes, show up to 800 chars
+          msg.textContent = t.failureMessages[0].replace(/\x1b\[[0-9;]*m/g, '').slice(0, 800)
+          // Add as a second grid row
+          const wrapper = document.createDocumentFragment()
+          wrapper.appendChild(row)
+          const failRow = document.createElement('div')
+          failRow.style.cssText = 'grid-column:2/-1;padding:0 14px 8px;'
+          failRow.appendChild(msg)
+          group.appendChild(row)
+          group.appendChild(failRow)
+          return
+        }
+        group.appendChild(row)
+      })
+
+      list.appendChild(group)
+    })
+
+    card.appendChild(header)
+    card.appendChild(list)
+    testsBody.appendChild(card)
+  })
+
+  if (!suites.length) {
+    testsBody.innerHTML = '<div class="tests-empty">No test results found in output.</div>'
+  }
 }
+
+// Expand / collapse all
+expandAllBtn.addEventListener('click', () => {
+  testsBody.querySelectorAll('.suite-card').forEach(c => c.dataset.open = 'true')
+})
+collapseAllBtn.addEventListener('click', () => {
+  testsBody.querySelectorAll('.suite-card').forEach(c => c.dataset.open = 'false')
+})
 
 async function loadCachedTests() {
   try {
