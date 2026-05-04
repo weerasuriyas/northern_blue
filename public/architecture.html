@@ -736,9 +736,64 @@
   .test-row.passed .test-icon { color: var(--ok); }
   .test-row.failed .test-icon { color: var(--warn); }
   .test-title { flex: 1; color: var(--text); line-height: 1.6; }
-  .test-dur   { flex-shrink: 0; color: var(--dim); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: auto; }
+  .test-dur   { flex-shrink: 0; color: var(--dim); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Expand / collapse toggle — shown only when a detail panel exists */
+  .expand-tog {
+    flex-shrink: 0; width: 18px; height: 18px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.05);
+    color: var(--dim); font-size: 13px; font-weight: 600;
+    transition: all .1s ease; cursor: pointer;
+    user-select: none;
+  }
+  .test-row:hover .expand-tog             { color: var(--text); background: rgba(255,255,255,0.10); }
+  .test-item[data-expanded="true"] .expand-tog { color: var(--accent); background: rgba(106,169,255,0.15); }
+
+  /* Detail panel — INPUT / EXPECTED / NOTE */
+  .test-detail {
+    display: none;
+    margin: 0 14px 10px 44px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(0,0,0,0.18);
+  }
+  .test-item[data-expanded="true"] .test-detail { display: block; }
+
+  .detail-row {
+    display: flex; align-items: stretch;
+    border-bottom: 1px solid var(--line);
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label {
+    width: 76px; flex-shrink: 0;
+    padding: 8px 10px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase;
+    color: var(--dim); background: var(--bg-3);
+    border-right: 1px solid var(--line);
+    display: flex; align-items: flex-start; padding-top: 10px;
+  }
+  .detail-code {
+    flex: 1; margin: 0;
+    padding: 8px 12px;
+    font-size: 12px; line-height: 1.55;
+    color: #c8d8ff;
+    white-space: pre-wrap; word-break: break-word;
+    font-family: ui-monospace, "JetBrains Mono", Menlo, monospace;
+    background: transparent;
+  }
+  .detail-code.expected { color: #a8f0b0; }
+  .detail-note {
+    flex: 1; padding: 8px 12px;
+    font-size: 12.5px; color: var(--muted); line-height: 1.6;
+    font-style: italic;
+  }
+
+  /* Failure message (for actually failing tests) */
   .test-failure {
-    margin: 0 16px 10px 44px;
+    margin: 0 14px 10px 44px;
     background: rgba(255,138,161,0.07);
     border: 1px solid rgba(255,138,161,0.22);
     border-radius: 8px; padding: 10px 12px;
@@ -747,6 +802,7 @@
     white-space: pre-wrap; word-break: break-word;
     line-height: 1.6;
   }
+
   .tests-empty {
     padding: 36px 20px; text-align: center; color: var(--dim); font-size: 13.5px; line-height: 1.6;
   }
@@ -2420,6 +2476,235 @@ function shortPath(full) {
 function fileBasename(p) {
   return shortPath(p).replace(/^tests\//, '')
 }
+
+/* ── Per-test input / expected / note ───────────────────────────────────
+   Key: "filename:test title"  (exact match against t.title from vitest)
+   ─────────────────────────────────────────────────────────────────────── */
+const TEST_DETAILS = {
+  /* auth */
+  'auth.test.js:correct credentials grant admin access': {
+    input:    `checkCredentials('admin', 'admin123')`,
+    expected: `→ true`,
+    note: `Dev fallback when ADMIN_USERNAME / ADMIN_PASSWORD_HASH env vars are not set. Change before prod.`,
+  },
+  'auth.test.js:wrong password blocks login': {
+    input:    `checkCredentials('admin', 'wrong')`,
+    expected: `→ false`,
+  },
+  'auth.test.js:wrong username blocks login': {
+    input:    `checkCredentials('notadmin', 'admin123')`,
+    expected: `→ false`,
+  },
+  'auth.test.js:empty credentials are blocked': {
+    input:    `checkCredentials('', '')`,
+    expected: `→ false`,
+  },
+  'auth.test.js:signing produces a valid three-part JWT': {
+    input:    `signToken({ username: 'admin' })`,
+    expected: `"eyJhbGc….<payload>..<sig>"  ← 3 dot-separated parts\ntoken.split('.').length === 3`,
+    note: `HS256-signed. Secret from ADMIN_JWT_SECRET (≥32 chars). Expires in 7 days.`,
+  },
+  'auth.test.js:signed payload survives a round-trip': {
+    input:    `const token = signToken({ username: 'admin', role: 'admin' })\nverifyToken(token)`,
+    expected: `{ username: 'admin', role: 'admin', iat: <epoch>, exp: <epoch+7d> }`,
+  },
+  'auth.test.js:malformed token is rejected — no access granted': {
+    input:    `verifyToken('not.a.jwt')`,
+    expected: `→ null`,
+    note: `jwt.verify() throws JsonWebTokenError — we catch and return null so callers don't need try/catch.`,
+  },
+  'auth.test.js:tampered token is rejected — signature mismatch detected': {
+    input:    `const token = signToken({ username: 'admin' })\nverifyToken(token.slice(0, -4) + 'xxxx')`,
+    expected: `→ null`,
+    note: `Replacing even one char in the signature invalidates the HMAC-SHA256 check.`,
+  },
+  'auth.test.js:empty string returns null — no silent access': {
+    input:    `verifyToken('')`,
+    expected: `→ null`,
+  },
+
+  /* cart */
+  'cart.test.js:new cart starts empty with $0.00 subtotal': {
+    input:    `stubCreateCart()`,
+    expected: `{\n  id: 'stub-cart',\n  checkoutUrl: '#checkout-not-configured',\n  lines: [],\n  cost: {\n    subtotalAmount: { amount: '0.00', currencyCode: 'CAD' },\n    totalAmount:    { amount: '0.00', currencyCode: 'CAD' }\n  }\n}`,
+  },
+  'cart.test.js:adding a product creates a cart line': {
+    input:    `stubAddLine(stubCreateCart(), {\n  variantId:   'var-1',\n  quantity:    1,\n  merchandise: { id: 'var-1', price: { amount: '10.00', currencyCode: 'CAD' } }\n})`,
+    expected: `cart.lines.length === 1\ncart.lines[0].quantity === 1\ncart.lines[0].merchandise.id === 'var-1'`,
+  },
+  'cart.test.js:adding the same variant twice increases quantity — no duplicate lines': {
+    input:    `addLine(cart, { variantId: 'var-1', quantity: 2 })   // first add\naddLine(cart, { variantId: 'var-1', quantity: 3 })   // second add`,
+    expected: `cart.lines.length === 1      // still one line, not two\ncart.lines[0].quantity === 5 // 2 + 3 merged`,
+    note: `Dedup key is merchandise.id — the stub spreads merchandise AFTER setting id, so ids must match variantId.`,
+  },
+  'cart.test.js:different variants each get their own line': {
+    input:    `addLine(cart, { variantId: 'var-1', quantity: 1 })\naddLine(cart, { variantId: 'var-2', quantity: 1 })`,
+    expected: `cart.lines.length === 2`,
+  },
+  'cart.test.js:subtotal is recalculated immediately — no stale price shown': {
+    input:    `stubAddLine(cart, { variantId: 'var-1', quantity: 2, price: '$15.00' })`,
+    expected: `cart.cost.subtotalAmount.amount === '30.00'   // 2 × $15`,
+  },
+  'cart.test.js:updating quantity recalculates the subtotal': {
+    input:    `// cart has 1× var-1 at $10.00\nstubUpdateLine(cart, cart.lines[0].id, 4)`,
+    expected: `cart.lines[0].quantity === 4\ncart.cost.subtotalAmount.amount === '40.00'   // 4 × $10`,
+  },
+  'cart.test.js:setting quantity to 0 removes the item': {
+    input:    `stubUpdateLine(cart, lineId, 0)`,
+    expected: `cart.lines.length === 0`,
+  },
+  'cart.test.js:negative quantity removes the item': {
+    input:    `stubUpdateLine(cart, lineId, -1)`,
+    expected: `cart.lines.length === 0`,
+  },
+  'cart.test.js:removing one item preserves other lines': {
+    input:    `// cart has var-1 (lines[0]) and var-2 (lines[1])\nstubRemoveLine(cart, cart.lines[0].id)`,
+    expected: `cart.lines.length === 1\ncart.lines[0].merchandise.id === 'var-2'  // var-1 gone`,
+  },
+  'cart.test.js:removing the only item zeroes the subtotal — no phantom charges': {
+    input:    `// cart has 3× var-1 at $10 each (subtotal $30)\nstubRemoveLine(cart, cart.lines[0].id)`,
+    expected: `cart.cost.subtotalAmount.amount === '0.00'`,
+  },
+
+  /* formatCurrency */
+  'formatCurrency.test.js:prices default to Canadian dollar format': {
+    input:    `formatCurrency(10)`,
+    expected: `→ '$10.00'`,
+    note: `Uses Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).`,
+  },
+  'formatCurrency.test.js:all prices show exactly two decimal places': {
+    input:    `formatCurrency(10.5)`,
+    expected: `→ '$10.50'`,
+  },
+  'formatCurrency.test.js:Shopify string prices (sent as strings from the API) render correctly': {
+    input:    `formatCurrency('29.99')  // Shopify sends prices as strings, not numbers`,
+    expected: `→ '$29.99'`,
+    note: `parseFloat() inside formatCurrency handles the conversion.`,
+  },
+  'formatCurrency.test.js:zero-price items show $0.00 — not blank or null': {
+    input:    `formatCurrency(0)`,
+    expected: `→ '$0.00'`,
+  },
+  'formatCurrency.test.js:large prices use thousands separator — readable at a glance': {
+    input:    `formatCurrency(1234.56)`,
+    expected: `→ '$1,234.56'`,
+  },
+  'formatCurrency.test.js:non-CAD currency codes are applied when specified': {
+    input:    `formatCurrency(50, 'USD')`,
+    expected: `result.includes('50') === true\nresult.includes('$') === true`,
+  },
+
+  /* StatusBadge */
+  'StatusBadge.test.jsx:status label text is always visible': {
+    input:    `render(<StatusBadge status="fulfilled" />)`,
+    expected: `screen.getByText('fulfilled').toBeInTheDocument()`,
+  },
+  'StatusBadge.test.jsx:fulfilled orders show green — positive completion signal': {
+    input:    `render(<StatusBadge status="fulfilled" />)`,
+    expected: `span.className contains 'green'\n→ bg-green-50 text-green-700 border-green-200`,
+  },
+  'StatusBadge.test.jsx:unfulfilled orders show amber — action required': {
+    input:    `render(<StatusBadge status="unfulfilled" />)`,
+    expected: `span.className contains 'amber'\n→ bg-amber-50 text-amber-700 border-amber-200`,
+  },
+  'StatusBadge.test.jsx:pending orders show blue — awaiting processing': {
+    input:    `render(<StatusBadge status="pending" />)`,
+    expected: `span.className contains 'blue'`,
+  },
+  'StatusBadge.test.jsx:cancelled orders show red — terminal negative state': {
+    input:    `render(<StatusBadge status="cancelled" />)`,
+    expected: `span.className contains 'red'`,
+  },
+  'StatusBadge.test.jsx:declined returns show red — request denied': {
+    input:    `render(<StatusBadge status="declined" />)`,
+    expected: `span.className contains 'red'`,
+  },
+  'StatusBadge.test.jsx:unknown statuses get neutral gray — no false colour signal': {
+    input:    `render(<StatusBadge status="something-unknown" />)`,
+    expected: `span.className contains 'gray'\n→ bg-gray-100 text-gray-600 border-gray-200  (safe fallback)`,
+  },
+  'StatusBadge.test.jsx:status matching ignores capitalisation — API inconsistencies handled': {
+    input:    `render(<StatusBadge status="FULFILLED" />)  // uppercase from API`,
+    expected: `span.className contains 'green'\n// status?.toLowerCase() normalises before STYLES lookup`,
+  },
+  'StatusBadge.test.jsx:missing status does not crash the page': {
+    input:    `render(<StatusBadge />)  // no props at all`,
+    expected: `querySelector('span').className contains 'gray'\n// status?.toLowerCase() → undefined → fallback`,
+  },
+
+  /* StatsCard */
+  'StatsCard.test.jsx:metric title and value are always visible on the dashboard': {
+    input:    `render(<StatsCard title="Total Orders" value="42" />)`,
+    expected: `screen.getByText('Total Orders').toBeInTheDocument()\nscreen.getByText('42').toBeInTheDocument()`,
+  },
+  'StatsCard.test.jsx:supporting context line shows when provided': {
+    input:    `render(<StatsCard title="Revenue" value="$1,200" sub="this month" />)`,
+    expected: `screen.getByText('this month').toBeInTheDocument()`,
+  },
+  'StatsCard.test.jsx:no extra elements rendered when sub-text is absent': {
+    input:    `render(<StatsCard title="Customers" value="10" />)  // no 'sub' prop`,
+    expected: `document.querySelectorAll('p').length === 2\n// only title <p> + value <p>; no phantom sub element`,
+  },
+  'StatsCard.test.jsx:numeric values render as readable text': {
+    input:    `render(<StatsCard title="Items" value={99} />)  // number prop`,
+    expected: `screen.getByText('99').toBeInTheDocument()`,
+  },
+
+  /* DataTable */
+  'DataTable.test.jsx:loading state shows a spinner — not a blank screen or stale data': {
+    input:    `render(<DataTable columns={COLS} data={[]} loading />)`,
+    expected: `container.querySelector('.animate-spin') !== null`,
+    note: `The spinner is a Tailwind div with animate-spin. No <table> renders while loading.`,
+  },
+  'DataTable.test.jsx:table is hidden while data is loading — no partial renders': {
+    input:    `render(<DataTable columns={COLS} data={ROWS} loading />)`,
+    expected: `screen.queryByRole('table') === null`,
+  },
+  'DataTable.test.jsx:empty state message shows when there is no data': {
+    input:    `render(<DataTable columns={COLS} data={[]} />)`,
+    expected: `screen.getByText('No data.').toBeInTheDocument()`,
+  },
+  'DataTable.test.jsx:custom empty message gives context-specific guidance': {
+    input:    `render(<DataTable columns={COLS} data={[]} emptyMessage="No orders placed yet." />)`,
+    expected: `screen.getByText('No orders placed yet.').toBeInTheDocument()`,
+  },
+  'DataTable.test.jsx:column headers are always visible for orientation': {
+    input:    `render(<DataTable\n  columns={[{key:'name',header:'Name'},{key:'status',header:'Status'}]}\n  data={ROWS}\n/>)`,
+    expected: `screen.getByText('Name').toBeInTheDocument()\nscreen.getByText('Status').toBeInTheDocument()`,
+  },
+  'DataTable.test.jsx:all data rows are rendered — no silent truncation': {
+    input:    `render(<DataTable columns={COLS}\n  data={[{id:'1',name:'Alice',status:'active'},{id:'2',name:'Bob'}]}\n/>)`,
+    expected: `screen.getByText('Alice').toBeInTheDocument()\nscreen.getByText('Bob').toBeInTheDocument()`,
+  },
+  'DataTable.test.jsx:custom cell renderers apply correctly — e.g. status badges, links': {
+    input:    `const cols = [{ key: 'name', header: 'Name',\n  render: row => <strong>{row.name.toUpperCase()}</strong>\n}]\nrender(<DataTable columns={cols} data={[{id:'1',name:'Alice'}]} />)`,
+    expected: `screen.getByText('ALICE').toBeInTheDocument()`,
+  },
+  'DataTable.test.jsx:rows without an id do not crash the table': {
+    input:    `render(<DataTable columns={COLS}\n  data={[{ name: 'No ID Row', status: 'ok' }]}\n/>)  // no 'id' field`,
+    expected: `screen.getByText('No ID Row').toBeInTheDocument()\n// row.id ?? i  →  falls back to array index as React key`,
+  },
+
+  /* PriceDisplay */
+  'PriceDisplay.test.jsx:product price renders from the Shopify priceRange shape': {
+    input:    `render(<PriceDisplay priceRange={{\n  minVariantPrice: { amount: '29.99', currencyCode: 'CAD' }\n}} />)`,
+    expected: `screen.getByText('$29.99').toBeInTheDocument()`,
+    note: `priceRange.minVariantPrice mirrors the Shopify Storefront GraphQL ProductVariant shape.`,
+  },
+  'PriceDisplay.test.jsx:free products show $0.00 — not a blank price field': {
+    input:    `render(<PriceDisplay priceRange={{\n  minVariantPrice: { amount: '0.00', currencyCode: 'CAD' }\n}} />)`,
+    expected: `screen.getByText('$0.00').toBeInTheDocument()`,
+  },
+  'PriceDisplay.test.jsx:additional classNames apply correctly for layout contexts': {
+    input:    `render(<PriceDisplay priceRange={...} className="text-xl" />)`,
+    expected: `container.firstChild.className.includes('text-xl') === true`,
+  },
+  'PriceDisplay.test.jsx:Shopify string amounts (not numbers) render without conversion errors': {
+    input:    `render(<PriceDisplay priceRange={{\n  minVariantPrice: { amount: '149.00', currencyCode: 'CAD' }\n}} />)`,
+    expected: `screen.getByText('$149.00').toBeInTheDocument()`,
+    note: `Shopify's Storefront API sends amount as a string. formatCurrency() calls parseFloat() internally.`,
+  },
+}
 function fmt(ms) {
   if (ms == null) return ''
   if (ms < 1)    return '<1ms'
@@ -2530,19 +2815,57 @@ function renderTestResults(result) {
       }
 
       tests.forEach(t => {
+        const detailKey = `${basename}:${t.title}`
+        const detail    = TEST_DETAILS[detailKey] || null
+
+        // Wrapper so .test-item[data-expanded] CSS can toggle the panel
+        const item = document.createElement('div')
+        item.className = 'test-item'
+        item.dataset.expanded = 'false'
+
         const row = document.createElement('div')
         row.className = `test-row ${t.status}`
         row.innerHTML = `
           <span class="test-icon">${t.status === 'passed' ? '✓' : '✗'}</span>
           <span class="test-title">${escapeHtml(t.title)}</span>
-          <span class="test-dur">${fmt(t.duration)}</span>`
-        group.appendChild(row)
+          <span class="test-dur">${fmt(t.duration)}</span>
+          ${detail ? '<span class="expand-tog" title="Show input / expected">+</span>' : ''}`
+
+        if (detail) {
+          row.style.cursor = 'pointer'
+          row.addEventListener('click', () => {
+            const open = item.dataset.expanded === 'true'
+            item.dataset.expanded = open ? 'false' : 'true'
+            row.querySelector('.expand-tog').textContent = open ? '+' : '−'
+          })
+
+          const panel = document.createElement('div')
+          panel.className = 'test-detail'
+          panel.innerHTML = `
+            <div class="detail-row">
+              <span class="detail-label">Input</span>
+              <pre class="detail-code">${escapeHtml(detail.input)}</pre>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Expected</span>
+              <pre class="detail-code expected">${escapeHtml(detail.expected)}</pre>
+            </div>
+            ${detail.note ? `<div class="detail-row">
+              <span class="detail-label">Note</span>
+              <span class="detail-note">${escapeHtml(detail.note)}</span>
+            </div>` : ''}`
+          item.appendChild(row)
+          item.appendChild(panel)
+        } else {
+          item.appendChild(row)
+        }
+        group.appendChild(item)
 
         if (t.failureMessages?.length) {
           const msg = document.createElement('div')
           msg.className = 'test-failure'
           msg.textContent = t.failureMessages[0]
-            .replace(/\x1b\[[0-9;]*m/g, '') // strip ANSI colour codes
+            .replace(/\x1b\[[0-9;]*m/g, '')
             .slice(0, 1200)
           group.appendChild(msg)
         }
