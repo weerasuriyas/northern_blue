@@ -668,16 +668,31 @@
   .suite-card.failed .suite-dot { background: var(--warn); box-shadow: 0 0 10px rgba(255,138,161,0.7); }
 
   .suite-name {
-    flex: 1; font-size: 13.5px; font-weight: 500; color: var(--text);
+    flex: 1; font-size: 13px; font-weight: 500; color: var(--text);
     font-family: ui-monospace, "JetBrains Mono", Menlo, monospace;
+    min-width: 0;
   }
-  .suite-meta { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .suite-meta { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .suite-cat {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.4px;
+    padding: 2px 8px; border-radius: 999px;
+    border: 1px solid currentColor; opacity: 0.75;
+    white-space: nowrap;
+  }
   .suite-count {
-    font-size: 13px; font-weight: 600;
+    font-size: 13px; font-weight: 700;
     color: var(--ok); font-variant-numeric: tabular-nums;
   }
   .suite-card.failed .suite-count { color: var(--warn); }
   .suite-dur { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+  /* Operational context — shown below the suite header */
+  .suite-covers {
+    padding: 8px 16px 10px 50px;
+    font-size: 12.5px; color: var(--muted); line-height: 1.6;
+    border-bottom: 1px solid var(--line);
+    font-style: italic;
+  }
 
   /* Expanded content */
   .test-list {
@@ -2313,17 +2328,97 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleAr
    5.  Test runner
    ───────────────────────────────────────────── */
 
-const runBtn       = document.getElementById('run-tests-btn')
-const runLabel     = document.querySelector('.run-label')
-const testsBody    = document.getElementById('tests-body')
-const testsSummary = document.getElementById('tests-summary')
-const testsRanAt   = document.getElementById('tests-ran-at')
+const runBtn        = document.getElementById('run-tests-btn')
+const runLabel      = document.querySelector('.run-label')
+const testsBody     = document.getElementById('tests-body')
+const testsSummary  = document.getElementById('tests-summary')
+const testsRanAt    = document.getElementById('tests-ran-at')
 const expandAllBtn  = document.getElementById('expand-all-btn')
-const collapseAllBtn = document.getElementById('collapse-all-btn')
+const collapseAllBtn= document.getElementById('collapse-all-btn')
+
+/* ── Operational context registry ────────────────────────────────────────
+   Maps the test filename (without path) to:
+     cat    - business category shown as a badge
+     color  - CSS custom property for badge accent
+     covers - one-sentence "what failing here would break" statement
+   ─────────────────────────────────────────────────────────────────────── */
+const SUITE_META = {
+  'About.test.jsx': {
+    cat: 'Storefront', color: 'var(--store)',
+    covers: 'About / brand story section renders on the homepage.',
+  },
+  'AnnouncementBar.test.jsx': {
+    cat: 'Storefront', color: 'var(--store)',
+    covers: 'Promo announcement bar appears at the top and can be dismissed by customers.',
+  },
+  'App.test.jsx': {
+    cat: 'Storefront', color: 'var(--store)',
+    covers: 'Full storefront renders all primary sections without errors.',
+  },
+  'auth.test.js': {
+    cat: 'Security', color: 'var(--warn)',
+    covers: 'Admin login cannot be bypassed. JWT session tokens are tamper-proof.',
+  },
+  'ButterflyLogo.test.jsx': {
+    cat: 'Brand', color: '#c0c8e8',
+    covers: 'Brand logo renders with correct accessible alt text and supports size / class props.',
+  },
+  'cart.test.js': {
+    cat: 'Commerce', color: 'var(--ok)',
+    covers: 'Cart pricing stays accurate. Duplicate variants merge. Removal zeroes totals — no phantom charges.',
+  },
+  'Collections.test.jsx': {
+    cat: 'Storefront', color: 'var(--store)',
+    covers: 'Collections listing shows all collections with working Explore links.',
+  },
+  'ContactForm.test.jsx': {
+    cat: 'Customer', color: 'var(--accent)',
+    covers: 'Contact form accepts customer input, validates, submits, and shows success feedback.',
+  },
+  'DataTable.test.jsx': {
+    cat: 'Admin UI', color: 'var(--admin)',
+    covers: 'Admin data tables handle loading, empty, and populated states — used across every admin list page.',
+  },
+  'Footer.test.jsx': {
+    cat: 'Storefront', color: 'var(--store)',
+    covers: 'Footer shows brand name and a current-year copyright notice.',
+  },
+  'formatCurrency.test.js': {
+    cat: 'Commerce', color: 'var(--ok)',
+    covers: 'All prices display correctly in CAD. Shopify API string amounts render without conversion errors.',
+  },
+  'Hero.test.jsx': {
+    cat: 'Storefront', color: 'var(--store)',
+    covers: 'Hero section renders the brand name and call-to-action on the homepage.',
+  },
+  'Navbar.test.jsx': {
+    cat: 'Navigation', color: 'var(--accent)',
+    covers: 'Nav links point to the correct in-page sections (#about, #collections, #contact).',
+  },
+  'PriceDisplay.test.jsx': {
+    cat: 'Commerce', color: 'var(--ok)',
+    covers: 'Product price component renders correctly from the Shopify priceRange shape used by all product cards.',
+  },
+  'StatsCard.test.jsx': {
+    cat: 'Admin UI', color: 'var(--admin)',
+    covers: 'Dashboard KPI cards always show their metric, title, and optional supporting context.',
+  },
+  'StatusBadge.test.jsx': {
+    cat: 'Admin UI', color: 'var(--admin)',
+    covers: 'Order and return status badges show the right colour for every status. Unknown values get a safe neutral.',
+  },
+  'useFadeIn.test.jsx': {
+    cat: 'UX', color: '#c0c8e8',
+    covers: 'Scroll-triggered fade animations mount and clean up correctly — no memory leaks on unmount.',
+  },
+}
 
 function shortPath(full) {
   if (!full) return '(unknown)'
   return String(full).replace(/.*[/\\]tests[/\\]/, 'tests/')
+}
+function fileBasename(p) {
+  return shortPath(p).replace(/^tests\//, '')
 }
 function fmt(ms) {
   if (ms == null) return ''
@@ -2376,6 +2471,8 @@ function renderTestResults(result) {
     const nFailed    = assertions.filter(t => t.status === 'failed').length
     const cls        = nFailed > 0 ? 'failed' : 'passed'
     const dur        = suite.endTime && suite.startTime ? fmt(suite.endTime - suite.startTime) : ''
+    const basename   = fileBasename(suite.name)
+    const meta       = SUITE_META[basename] || null
 
     // Group tests by their describe block(s)
     const groups = new Map()
@@ -2388,9 +2485,9 @@ function renderTestResults(result) {
     // Suite card
     const card = document.createElement('div')
     card.className = `suite-card ${cls}`
-    card.dataset.open = 'true'   // all open by default
+    card.dataset.open = 'true'
 
-    // Clickable header
+    // Clickable header — full-width, entire row triggers toggle
     const header = document.createElement('div')
     header.className = 'suite-header'
     header.innerHTML = `
@@ -2398,12 +2495,24 @@ function renderTestResults(result) {
       <span class="suite-dot"></span>
       <span class="suite-name">${escapeHtml(shortPath(suite.name))}</span>
       <span class="suite-meta">
+        ${meta ? `<span class="suite-cat" style="color:${meta.color}">${escapeHtml(meta.cat)}</span>` : ''}
         <span class="suite-count">${nPassed}/${assertions.length}</span>
         ${dur ? `<span class="suite-dur">${dur}</span>` : ''}
       </span>`
     header.addEventListener('click', () => {
       card.dataset.open = card.dataset.open === 'true' ? 'false' : 'true'
     })
+
+    // Operational context line — always visible, below the header
+    if (meta?.covers) {
+      const covers = document.createElement('div')
+      covers.className = 'suite-covers'
+      covers.textContent = meta.covers
+      card.appendChild(header)
+      card.appendChild(covers)
+    } else {
+      card.appendChild(header)
+    }
 
     // Test list with describe groups
     const list = document.createElement('div')
@@ -2442,7 +2551,6 @@ function renderTestResults(result) {
       list.appendChild(group)
     })
 
-    card.appendChild(header)
     card.appendChild(list)
     testsBody.appendChild(card)
   })

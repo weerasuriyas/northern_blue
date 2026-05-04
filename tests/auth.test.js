@@ -1,49 +1,46 @@
 import { checkCredentials, signToken, verifyToken } from '@/lib/auth'
 
-// checkCredentials uses the dev fallback (admin/admin123) when env vars are unset
-describe('checkCredentials', () => {
-  test('accepts the dev fallback credentials', () => {
+describe('checkCredentials — admin login gate', () => {
+  test('correct credentials grant admin access', () => {
     expect(checkCredentials('admin', 'admin123')).toBe(true)
   })
 
-  test('rejects wrong password', () => {
+  test('wrong password blocks login', () => {
     expect(checkCredentials('admin', 'wrong')).toBe(false)
   })
 
-  test('rejects wrong username', () => {
+  test('wrong username blocks login', () => {
     expect(checkCredentials('notadmin', 'admin123')).toBe(false)
   })
 
-  test('rejects empty credentials', () => {
+  test('empty credentials are blocked', () => {
     expect(checkCredentials('', '')).toBe(false)
   })
 })
 
-describe('signToken / verifyToken round-trip', () => {
-  test('signToken returns a string', () => {
+describe('signToken / verifyToken — session integrity', () => {
+  test('signing produces a valid three-part JWT', () => {
     const token = signToken({ username: 'admin' })
     expect(typeof token).toBe('string')
-    expect(token.split('.')).toHaveLength(3) // header.payload.signature
+    expect(token.split('.')).toHaveLength(3)
   })
 
-  test('verifyToken decodes a signed payload', () => {
+  test('signed payload survives a round-trip', () => {
     const payload = { username: 'admin', role: 'admin' }
-    const token = signToken(payload)
-    const decoded = verifyToken(token)
+    const decoded = verifyToken(signToken(payload))
     expect(decoded).toMatchObject(payload)
   })
 
-  test('verifyToken returns null for a malformed token', () => {
+  test('malformed token is rejected — no access granted', () => {
     expect(verifyToken('not.a.jwt')).toBeNull()
   })
 
-  test('verifyToken returns null for a tampered token', () => {
+  test('tampered token is rejected — signature mismatch detected', () => {
     const token = signToken({ username: 'admin' })
-    const tampered = token.slice(0, -4) + 'xxxx'
-    expect(verifyToken(tampered)).toBeNull()
+    expect(verifyToken(token.slice(0, -4) + 'xxxx')).toBeNull()
   })
 
-  test('verifyToken returns null for an empty string', () => {
+  test('empty string returns null — no silent access', () => {
     expect(verifyToken('')).toBeNull()
   })
 })
