@@ -2699,6 +2699,189 @@ const TEST_DETAILS = {
     expected: `screen.getByText('$149.00').toBeInTheDocument()`,
     note: `Shopify's Storefront API sends amount as a string. formatCurrency() calls parseFloat() internally.`,
   },
+
+  /* ── About ──────────────────────────────────── */
+  'About.test.jsx:renders Our Story heading': {
+    input:    `render(<About />)`,
+    expected: `getByRole('heading', { name: /our story/i }).toBeInTheDocument()`,
+  },
+  'About.test.jsx:has correct anchor id for smooth scroll': {
+    input:    `render(<About />)\ncontainer.querySelector('#about')`,
+    expected: `element exists in DOM`,
+    note: `Navbar "About" link points to /#about — this id must be present for the scroll to land.`,
+  },
+  'About.test.jsx:renders the pull-quote': {
+    input:    `render(<About />)`,
+    expected: `getByText(/love your clothes, love our earth/i).toBeInTheDocument()`,
+  },
+  'About.test.jsx:image and text columns have fade-in class': {
+    input:    `render(<About />)\ncontainer.querySelectorAll('.fade-in')`,
+    expected: `length >= 2`,
+    note: `useFadeIn adds the class via IntersectionObserver. Ensures the CSS hook is applied in markup.`,
+  },
+
+  /* ── AnnouncementBar ────────────────────────── */
+  'AnnouncementBar.test.jsx:renders the promo message': {
+    input:    `render(<AnnouncementBar />)`,
+    expected: `getByText(/free shipping on orders over/i).toBeInTheDocument()`,
+  },
+  'AnnouncementBar.test.jsx:renders a dismiss button': {
+    input:    `render(<AnnouncementBar />)`,
+    expected: `getByRole('button', { name: /dismiss announcement/i }).toBeInTheDocument()`,
+    note: `Accessible button name matters — screen-reader users need to understand what the button does.`,
+  },
+  'AnnouncementBar.test.jsx:hides when dismiss button is clicked': {
+    input:    `render(<AnnouncementBar />)\nfireEvent.click(getByRole('button', { name: /dismiss announcement/i }))`,
+    expected: `queryByText(/free shipping/i) === null`,
+    note: `Bar is removed from the DOM on dismiss, not just hidden — prevents it reappearing on scroll.`,
+  },
+
+  /* ── App (full storefront) ──────────────────── */
+  'App.test.jsx:renders all main sections': {
+    input:    `render(<CartProvider><HomePage /></CartProvider>)`,
+    expected: `getByRole('heading', { name: /northern blue/i }) ← Hero\ngetByRole('heading', { name: /our story/i }) ← About\ngetByRole('heading', { name: /get in touch/i }) ← Contact\n— all toBeInTheDocument()`,
+    note: `Smoke test — if any top-level import or data fetch crashes the page this fails first.`,
+  },
+
+  /* ── ButterflyLogo ──────────────────────────── */
+  'ButterflyLogo.test.jsx:renders butterfly logo SVG with accessible label': {
+    input:    `render(<ButterflyLogo />)`,
+    expected: `getByRole('img', { name: /northern blue plus butterfly logo/i }).toBeInTheDocument()`,
+    note: `SVG must have aria-label so screen readers announce it as an image with a meaningful name.`,
+  },
+  'ButterflyLogo.test.jsx:accepts a size prop': {
+    input:    `render(<ButterflyLogo size={48} />)\ncontainer.querySelector('svg')`,
+    expected: `svg.getAttribute('width') === '48'`,
+  },
+  'ButterflyLogo.test.jsx:accepts a className prop': {
+    input:    `render(<ButterflyLogo className="my-class" />)\ncontainer.querySelector('svg')`,
+    expected: `svg.classList.contains('my-class') === true`,
+  },
+  'ButterflyLogo.test.jsx:applies butterfly-flutter class to SVG when flutter prop is true': {
+    input:    `render(<ButterflyLogo flutter />)\ncontainer.querySelector('svg')`,
+    expected: `svg.classList.contains('butterfly-flutter') === true`,
+    note: `The flutter prop enables the CSS keyframe animation used in the Hero section.`,
+  },
+  'ButterflyLogo.test.jsx:does not apply butterfly-flutter class by default': {
+    input:    `render(<ButterflyLogo />)\ncontainer.querySelector('svg')`,
+    expected: `svg.classList.contains('butterfly-flutter') === false`,
+  },
+
+  /* ── Collections ────────────────────────────── */
+  'Collections.test.jsx:renders Our Collections heading': {
+    input:    `render(<Collections />)`,
+    expected: `getByRole('heading', { name: /our collections/i }).toBeInTheDocument()`,
+  },
+  'Collections.test.jsx:renders all 4 collection cards': {
+    input:    `render(<Collections />)`,
+    expected: `getByText('Spring Collection').toBeInTheDocument()\ngetByText('Everyday Essentials').toBeInTheDocument()\ngetByText('Workwear Edit').toBeInTheDocument()\ngetByText('Weekend Casual').toBeInTheDocument()`,
+    note: `All four collections must render — if one is removed from the component, this catches it.`,
+  },
+  'Collections.test.jsx:renders 4 Explore links': {
+    input:    `render(<Collections />)\ngetAllByRole('link', { name: /explore/i })`,
+    expected: `links.length === 4`,
+  },
+  'Collections.test.jsx:Explore links point to collection pages': {
+    input:    `render(<Collections />)\ngetAllByRole('link', { name: /explore/i })[0]`,
+    expected: `link.href === '/collections/spring-collection'`,
+    note: `Ensures link slugs match the actual DB collection handles — broken slugs return 404.`,
+  },
+  'Collections.test.jsx:has correct section id for smooth scroll': {
+    input:    `render(<Collections />)\ncontainer.querySelector('#collections')`,
+    expected: `element exists in DOM`,
+    note: `Navbar "Collections" link points to /#collections — id must be present.`,
+  },
+  'Collections.test.jsx:heading and grid have fade-in class': {
+    input:    `render(<Collections />)\ncontainer.querySelectorAll('.fade-in')`,
+    expected: `length >= 2`,
+  },
+
+  /* ── ContactForm ────────────────────────────── */
+  'ContactForm.test.jsx:renders all form fields': {
+    input:    `render(<ContactForm />)`,
+    expected: `getByLabelText(/name/i).toBeInTheDocument()\ngetByLabelText(/email/i).toBeInTheDocument()\ngetByLabelText(/subject/i).toBeInTheDocument()\ngetByLabelText(/message/i).toBeInTheDocument()`,
+  },
+  'ContactForm.test.jsx:renders the submit button': {
+    input:    `render(<ContactForm />)`,
+    expected: `getByRole('button', { name: /send message/i }).toBeInTheDocument()`,
+  },
+  'ContactForm.test.jsx:shows success message after form submit': {
+    input:    `render(<ContactForm />)\n// fill all fields\nfireEvent.click(getByRole('button', { name: /send message/i }))`,
+    expected: `getByText(/thank you/i).toBeInTheDocument()`,
+  },
+  'ContactForm.test.jsx:has correct anchor id for smooth scroll': {
+    input:    `render(<ContactForm />)\ncontainer.querySelector('#contact')`,
+    expected: `element exists in DOM`,
+    note: `Navbar "Contact" link points to /#contact — id must be present.`,
+  },
+  'ContactForm.test.jsx:clicking Send Message triggers a mailto link': {
+    input:    `render(<ContactForm />)\n// fill: name, email, subject, message\nfireEvent.click(getByRole('button', { name: /send message/i }))`,
+    expected: `window.location.href matches /^mailto:admin@northernblue\\.ca/\n  && contains 'subject=Hello'\n  && contains 'jane%40example.com'`,
+    note: `Contact form sends via mailto: — no backend needed. Email is URL-encoded in the href.`,
+  },
+  'ContactForm.test.jsx:inner content has fade-in class': {
+    input:    `render(<ContactForm />)\ncontainer.querySelector('.fade-in')`,
+    expected: `element exists (not null)`,
+  },
+
+  /* ── Footer ─────────────────────────────────── */
+  'Footer.test.jsx:renders Northern Blue name in footer': {
+    input:    `render(<Footer />)`,
+    expected: `getAllByText(/northern blue/i).length > 0`,
+  },
+  'Footer.test.jsx:renders current year in copyright': {
+    input:    `render(<Footer />)\n// currentYear = new Date().getFullYear()`,
+    expected: `getByText(new RegExp(currentYear)).toBeInTheDocument()`,
+    note: `Year is dynamic — no hardcoded string, so the copyright is always current.`,
+  },
+
+  /* ── Hero ───────────────────────────────────── */
+  'Hero.test.jsx:renders the brand name heading': {
+    input:    `render(<Hero />)`,
+    expected: `getByRole('heading', { name: /northern blue/i }).toBeInTheDocument()`,
+  },
+  'Hero.test.jsx:renders the tagline': {
+    input:    `render(<Hero />)`,
+    expected: `getByText(/love your clothes, love our earth/i).toBeInTheDocument()`,
+  },
+  'Hero.test.jsx:renders scroll-down link pointing to about section': {
+    input:    `render(<Hero />)`,
+    expected: `getByRole('link', { name: /scroll down/i }).getAttribute('href') === '#about'`,
+    note: `Clicking this chevron smooth-scrolls to the About section — href must stay #about.`,
+  },
+  'Hero.test.jsx:hero butterfly logo has flutter animation enabled': {
+    input:    `render(<Hero />)\ncontainer.querySelector('svg[aria-label="Northern Blue Plus butterfly logo"]')`,
+    expected: `svg.classList.contains('butterfly-flutter') === true`,
+    note: `The Hero logo uses the flutter prop — the animated version is intentional and brand-specific.`,
+  },
+
+  /* ── Navbar ─────────────────────────────────── */
+  'Navbar.test.jsx:renders About, Collections, and Contact nav links': {
+    input:    `render(<CartProvider><Navbar /></CartProvider>)`,
+    expected: `getByRole('link', { name: /about/i }).href === '/#about'\ngetByRole('link', { name: /collections/i }).href === '/#collections'\ngetByRole('link', { name: /contact/i }).href === '/#contact'`,
+    note: `Wrapped in CartProvider because Navbar renders a cart icon that reads from CartContext.`,
+  },
+
+  /* ── useFadeIn ──────────────────────────────── */
+  'useFadeIn.test.jsx:adds visible class when element intersects': {
+    input:    `const div = document.createElement('div')\nrenderHook(() => useFadeIn({ current: div }))\n// simulate IntersectionObserver firing with isIntersecting: true`,
+    expected: `div.classList.contains('visible') === true`,
+    note: `useFadeIn uses IntersectionObserver — the test stubs it globally in setup.js.`,
+  },
+  'useFadeIn.test.jsx:does not add visible class when not intersecting': {
+    input:    `renderHook(() => useFadeIn({ current: div }))\n// simulate with isIntersecting: false`,
+    expected: `div.classList.contains('visible') === false`,
+  },
+  'useFadeIn.test.jsx:unobserves element after it becomes visible': {
+    input:    `renderHook(() => useFadeIn({ current: div }))\n// simulate isIntersecting: true`,
+    expected: `observer.observed does NOT contain div`,
+    note: `Once visible, the element is unobserved — prevents redundant callbacks on every scroll.`,
+  },
+  'useFadeIn.test.jsx:adds visible class immediately when prefers-reduced-motion is set': {
+    input:    `// matchMedia: '(prefers-reduced-motion: reduce)' → true\nrenderHook(() => useFadeIn({ current: div }))`,
+    expected: `div.classList.contains('visible') === true  // without waiting for IntersectionObserver`,
+    note: `Respects the OS accessibility setting — users who prefer reduced motion see content immediately.`,
+  },
 }
 function fmt(ms) {
   if (ms == null) return ''
