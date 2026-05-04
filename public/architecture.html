@@ -2483,16 +2483,16 @@ function fileBasename(p) {
 const TEST_DETAILS = {
   /* auth */
   'auth.test.js:correct credentials grant admin access': {
-    input:    `checkCredentials('admin', 'admin123')`,
+    input:    `checkCredentials(validUsername, validPassword)`,
     expected: `→ true`,
-    note: `Dev fallback when ADMIN_USERNAME / ADMIN_PASSWORD_HASH env vars are not set. Change before prod.`,
+    note: `Validates against ADMIN_USERNAME env var + bcrypt hash in ADMIN_PASSWORD_HASH.\nDev fallback is active when those env vars are not set — must be overridden before production.`,
   },
   'auth.test.js:wrong password blocks login': {
-    input:    `checkCredentials('admin', 'wrong')`,
+    input:    `checkCredentials(validUsername, wrongPassword)`,
     expected: `→ false`,
   },
   'auth.test.js:wrong username blocks login': {
-    input:    `checkCredentials('notadmin', 'admin123')`,
+    input:    `checkCredentials(unknownUsername, validPassword)`,
     expected: `→ false`,
   },
   'auth.test.js:empty credentials are blocked': {
